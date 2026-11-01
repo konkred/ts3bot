@@ -1,6 +1,6 @@
 # TeamSpeak 3 Bot
 
-Rekonstruierter Quellcode des ursprünglichen `bot.jar` (Floxiii, 2021), jetzt mit konfigurierbaren
+Rekonstruierter Quellcode des ursprünglichen `bot.jar` (Floxiii, 2021, liegt unter `legacy/bot.jar`), jetzt mit konfigurierbaren
 Gruppen-IDs und Texten. Verwendet die [TeamSpeak-3-Java-API](https://github.com/TheHolyWaffle/TeamSpeak-3-Java-API).
 
 ## Bauen & Starten
