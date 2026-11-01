@@ -114,6 +114,11 @@ public final class BotConfig {
         return string("startup.message");
     }
 
+    /** Anti-Bot-Gruppe: bei Mitgliedern dieser Gruppe verändert der Bot keine Ränge automatisch. */
+    public int exemptGroup() {
+        return integer("exempt-group");
+    }
+
     // --- Befehle ---
 
     public int ruheGroup() {
@@ -154,10 +159,6 @@ public final class BotConfig {
 
     public boolean loyaltyEnabled() {
         return bool("loyalty.enabled");
-    }
-
-    public int loyaltyExemptGroup() {
-        return integer("loyalty.exempt-group");
     }
 
     public String loyaltyMessage() {

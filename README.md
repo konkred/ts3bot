@@ -26,6 +26,9 @@ funktioniert weiter. Fehlende Schlüssel bekommen dabei die alten Standardwerte.
 | Mitglied | Gast → Mitglied, wenn der erste Besuch X Minuten her ist (beim Join) | `feature/JoinHandler` |
 | Treue-Ränge | Rang nach Dauer seit dem ersten Besuch (beim Join) | `feature/JoinHandler` |
 
+Gruppen (Standard): 11 = Gast (Standardgruppe), 10 = Member, 410 = Anti-Bot. Bei Nutzern in der
+Anti-Bot-Gruppe (`exempt-group`) verändert der Bot keine Ränge automatisch, `!ruhe` funktioniert aber weiterhin.
+
 Neu gegenüber dem alten Bot: automatischer Reconnect, einstellbarer Query-Port und Flood-Rate.
 
 ## Struktur

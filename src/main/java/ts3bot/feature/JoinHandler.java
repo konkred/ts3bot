@@ -32,7 +32,8 @@ public final class JoinHandler {
             LOG.debug("Client {} nicht gefunden: {}", e.getUniqueClientIdentifier(), ex.getMessage());
             return;
         }
-        if (client == null || client.isServerQueryClient()) {
+        // Anti-Bot-Gruppe: bei diesen Nutzern verändert der Bot keine Ränge.
+        if (client == null || client.isServerQueryClient() || client.isInServerGroup(config.exemptGroup())) {
             return;
         }
         long accountAgeMs = System.currentTimeMillis() - client.getCreatedDate().getTime();
@@ -40,7 +41,7 @@ public final class JoinHandler {
         if (config.memberEnabled()) {
             assignMember(client, accountAgeMs);
         }
-        if (config.loyaltyEnabled() && !client.isInServerGroup(config.loyaltyExemptGroup())) {
+        if (config.loyaltyEnabled()) {
             assignLoyaltyRank(client, e.getClientId(), accountAgeMs);
         }
     }

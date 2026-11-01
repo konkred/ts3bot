@@ -25,7 +25,7 @@ class BotConfigTest {
         assertEquals(9988, config.virtualServerPort());
         assertEquals(10011, config.queryPort());
         assertEquals(416, config.ruheGroup());
-        assertEquals(410, config.loyaltyExemptGroup());
+        assertEquals(410, config.exemptGroup());
         assertEquals(List.of(315, 316, 317, 318, 409, 417, 422, 423),
                 config.loyaltyRanks().stream().map(LoyaltyRank::groupId).toList());
         assertEquals(List.of(180, 360, 720, 1080, 1440, 1800, 2160, 2520),
