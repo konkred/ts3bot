@@ -153,6 +153,17 @@ public final class BotConfig {
         return string("command.treue.message-no-ranks");
     }
 
+    // --- Erreichbarkeit des Bots ---
+
+    public String welcomeMessage() {
+        return string("welcome.message");
+    }
+
+    /** ID des Bot-Channels, 0 wenn keiner eingetragen ist. */
+    public int botChannelId() {
+        return string("bot-channel.id").isBlank() ? 0 : integer("bot-channel.id");
+    }
+
     // --- Regelmäßige Rang-Prüfung ---
 
     public int rankCheckIntervalMinutes() {

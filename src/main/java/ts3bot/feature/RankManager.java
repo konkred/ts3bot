@@ -1,7 +1,6 @@
 package ts3bot.feature;
 
 import com.github.theholywaffle.teamspeak3.TS3Api;
-import com.github.theholywaffle.teamspeak3.api.event.ClientJoinEvent;
 import com.github.theholywaffle.teamspeak3.api.wrapper.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,19 +23,6 @@ public final class RankManager {
         this.config = config;
     }
 
-    public void handleJoin(ClientJoinEvent e) {
-        Client client;
-        try {
-            client = api.getClientByUId(e.getUniqueClientIdentifier());
-        } catch (Exception ex) {
-            LOG.debug("Client {} nicht gefunden: {}", e.getUniqueClientIdentifier(), ex.getMessage());
-            return;
-        }
-        if (client != null) {
-            update(client);
-        }
-    }
-
     public void checkOnlineClients() {
         for (Client client : api.getClients()) {
             // Ein Fehler bei einem Nutzer darf die Prüfung der übrigen nicht verhindern.
@@ -49,7 +35,7 @@ public final class RankManager {
     }
 
     // synchronized: Join-Events und die regelmäßige Prüfung laufen in verschiedenen Threads.
-    private synchronized void update(Client client) {
+    public synchronized void update(Client client) {
         // Anti-Bot-Gruppe: bei diesen Nutzern verändert der Bot keine Ränge.
         if (client.isServerQueryClient() || client.isInServerGroup(config.exemptGroup())) {
             return;

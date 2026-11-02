@@ -4,7 +4,13 @@ Java-Bot für einen TeamSpeak-3-Server, verbunden über ServerQuery mit der
 [TeamSpeak-3-Java-API](https://github.com/TheHolyWaffle/TeamSpeak-3-Java-API) 1.3.1.
 Der Quellcode ist aus der alten, nur kompiliert vorliegenden `legacy/bot.jar` (Floxiii, 2021)
 rekonstruiert. Die Funktionen der alten jar sollen sich mit den Standardwerten weiter genauso
-verhalten. Neu dazugekommen sind die regelmäßige Rang-Prüfung, `!treue`, `!help` und der Gruppen-Check.
+verhalten. Neu dazugekommen sind die regelmäßige Rang-Prüfung, `!treue`, `!help`, der Gruppen-Check,
+die Willkommensnachricht und der Bot-Channel.
+
+Der Query-Bot ist für normale Nutzer unsichtbar, sie können ihn also nicht von sich aus anschreiben.
+Er muss sie zuerst anschreiben, dann öffnet sich bei ihnen ein Chat-Tab, in dem sie antworten können.
+Der Bot reagiert auf private Nachrichten und auf den Chat des Channels, in dem er sitzt. Den Server-Chat
+ignoriert er bewusst, dort sollen normale Nutzer nicht schreiben.
 
 ## Befehle
 
@@ -30,6 +36,9 @@ Java 17 ist das Kompilier-Ziel (`maven.compiler.release`), lokal ist JDK 21 inst
   `update` ist `synchronized`, weil Join-Events und die regelmäßige Prüfung in verschiedenen Threads laufen.
 - `feature/RankChecker.java`: ruft den `RankManager` alle `rank-check.interval-minutes` Minuten auf.
 - `feature/GroupCheck.java`: warnt beim Start im Log vor Gruppen-IDs, die auf dem Server fehlen.
+- `feature/WelcomeMessage.java`: private Nachricht beim allerersten Besuch (`client_totalconnections`).
+- `feature/BotChannel.java`: optionaler Channel (`bot-channel.id`). Wer ihn betritt, bekommt die Befehlsliste
+  privat. Der Bot betritt ihn im `onConnect` **vor** `registerAllEvents()`, damit der Channel-Chat dort ankommt.
 - `src/main/resources/config.default.properties`: Vorlage **und** Quelle aller Standardwerte.
 
 Ein neues Feature bekommt eine eigene Klasse unter `feature/` und wird in `BotListener` aufgerufen.

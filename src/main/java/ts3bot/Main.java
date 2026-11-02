@@ -8,6 +8,7 @@ import com.github.theholywaffle.teamspeak3.api.reconnect.ReconnectStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ts3bot.config.BotConfig;
+import ts3bot.feature.BotChannel;
 import ts3bot.feature.GroupCheck;
 import ts3bot.feature.RankChecker;
 import ts3bot.feature.RankManager;
@@ -45,6 +46,7 @@ public final class Main {
                         api.login(config.user(), config.password());
                         api.selectVirtualServerByPort(config.virtualServerPort());
                         api.setNickname(config.nickname());
+                        BotChannel.enter(api, config);
                         api.registerAllEvents();
                         listener.setOwnClientId(api.whoAmI().getId());
                         LOG.info("Mit dem TeamSpeak-Server verbunden.");

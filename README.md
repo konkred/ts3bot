@@ -29,6 +29,13 @@ funktioniert weiter. Fehlende Schlüssel bekommen dabei die alten Standardwerte.
 | Treue-Ränge | Rang nach Dauer seit dem ersten Besuch | `feature/RankManager` |
 | Rang-Prüfung | Prüft Mitglied und Treue-Ränge beim Join und alle 5 Minuten für alle Online-Nutzer | `feature/RankChecker` |
 | Gruppen-Check | Warnt beim Start im Log vor Gruppen-IDs, die auf dem Server fehlen | `feature/GroupCheck` |
+| Willkommen | Private Nachricht beim allerersten Besuch, öffnet den Chat-Tab mit dem Bot | `feature/WelcomeMessage` |
+| Bot-Channel | Wer den Channel betritt, bekommt die Befehlsliste privat (optional) | `feature/BotChannel` |
+
+Der Bot ist für normale Nutzer unsichtbar. Sie erreichen ihn über den Chat-Tab, der sich öffnet, wenn
+er sie anschreibt (Willkommen, Rang-Nachricht, Bot-Channel), oder im Chat des Channels, in dem er sitzt.
+Für den Bot-Channel einen Channel anlegen und dessen ID als `bot-channel.id` eintragen. Nicht den
+Standard-Channel verwenden, sonst bekommt jeder bei jedem Join die Befehlsliste.
 
 Gruppen (Standard): 11 = Gast (Standardgruppe), 10 = Member, 410 = Anti-Bot. Bei Nutzern in der
 Anti-Bot-Gruppe (`exempt-group`) verändert der Bot keine Ränge automatisch, `!ruhe` funktioniert aber weiterhin.
@@ -47,6 +54,8 @@ src/main/java/ts3bot/
   feature/RankManager.java    Mitglied- und Treue-Ränge
   feature/RankChecker.java    Regelmäßige Rang-Prüfung
   feature/GroupCheck.java     Prüft beim Start die Gruppen-IDs
+  feature/WelcomeMessage.java Nachricht beim ersten Besuch
+  feature/BotChannel.java     Befehlsliste beim Betreten des Bot-Channels
 ```
 
 Neue Features: eigene Klasse unter `feature/` anlegen und in `BotListener` aufrufen.
