@@ -3,7 +3,8 @@
 Java-Bot für einen TeamSpeak-3-Server, verbunden über ServerQuery mit der
 [TeamSpeak-3-Java-API](https://github.com/TheHolyWaffle/TeamSpeak-3-Java-API) 1.3.1.
 Der Quellcode ist aus der alten, nur kompiliert vorliegenden `legacy/bot.jar` (Floxiii, 2021)
-rekonstruiert. Mit den Standardwerten soll sich der Bot genauso verhalten wie die alte jar.
+rekonstruiert. Die Funktionen der alten jar sollen sich mit den Standardwerten weiter genauso
+verhalten. Neu dazugekommen sind die regelmäßige Rang-Prüfung, `!treue`, `!help` und der Gruppen-Check.
 
 ## Befehle
 
@@ -24,8 +25,11 @@ Java 17 ist das Kompilier-Ziel (`maven.compiler.release`), lokal ist JDK 21 inst
 - `config/BotConfig.java`: typisierte Getter für `config.properties`.
 - `listener/BotListener.java`: einziger `TS3EventAdapter`. Verteilt Events an die Features und
   ignoriert die eigenen Nachrichten des Bots.
-- `feature/CommandHandler.java`: Chat-Befehle `!ruhe` (Gruppe an/aus mit Cooldown) und `!botinfo`.
-- `feature/JoinHandler.java`: beim Join Gast → Member nach Wartezeit und Treue-Ränge.
+- `feature/CommandHandler.java`: Chat-Befehle `!ruhe` (Gruppe an/aus mit Cooldown), `!botinfo`, `!treue`, `!help`.
+- `feature/RankManager.java`: Gast → Member nach Wartezeit und Treue-Ränge, beim Join und für alle Online-Nutzer.
+  `update` ist `synchronized`, weil Join-Events und die regelmäßige Prüfung in verschiedenen Threads laufen.
+- `feature/RankChecker.java`: ruft den `RankManager` alle `rank-check.interval-minutes` Minuten auf.
+- `feature/GroupCheck.java`: warnt beim Start im Log vor Gruppen-IDs, die auf dem Server fehlen.
 - `src/main/resources/config.default.properties`: Vorlage **und** Quelle aller Standardwerte.
 
 Ein neues Feature bekommt eine eigene Klasse unter `feature/` und wird in `BotListener` aufgerufen.
@@ -60,7 +64,7 @@ wird ab dem ersten Besuch auf dem Server (`client_created`), nicht nach Online-Z
 - Texte für Nutzer, Log-Meldungen, Kommentare und Commit-Messages sind auf Deutsch.
 - Nachrichten an Nutzer dürfen TeamSpeak-BBCode enthalten (`[B]`, `[COLOR=…]`, `[URL=…]`).
 - Gruppen-IDs, Texte und Zeiten kommen in die Config, nicht in den Code.
-- Logik ohne TS3-Verbindung (z. B. `JoinHandler.highestReached`) als package-private
+- Logik ohne TS3-Verbindung (z. B. `RankManager.highestReached`) als package-private
   statische Methode herausziehen und mit JUnit 5 testen.
 
 ## Release

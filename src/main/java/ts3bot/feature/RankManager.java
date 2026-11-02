@@ -11,20 +11,20 @@ import ts3bot.config.LoyaltyRank;
 import java.util.List;
 import java.util.Optional;
 
-/** Beim Betreten des Servers: Mitgliedsgruppe nach Wartezeit und Treue-Ränge vergeben. */
-public final class JoinHandler {
+/** Vergibt die Mitgliedsgruppe nach Wartezeit und die Treue-Ränge, beim Join und bei der regelmäßigen Prüfung. */
+public final class RankManager {
 
-    private static final Logger LOG = LoggerFactory.getLogger(JoinHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RankManager.class);
 
     private final TS3Api api;
     private final BotConfig config;
 
-    public JoinHandler(TS3Api api, BotConfig config) {
+    public RankManager(TS3Api api, BotConfig config) {
         this.api = api;
         this.config = config;
     }
 
-    public void handle(ClientJoinEvent e) {
+    public void handleJoin(ClientJoinEvent e) {
         Client client;
         try {
             client = api.getClientByUId(e.getUniqueClientIdentifier());
@@ -32,8 +32,26 @@ public final class JoinHandler {
             LOG.debug("Client {} nicht gefunden: {}", e.getUniqueClientIdentifier(), ex.getMessage());
             return;
         }
+        if (client != null) {
+            update(client);
+        }
+    }
+
+    public void checkOnlineClients() {
+        for (Client client : api.getClients()) {
+            // Ein Fehler bei einem Nutzer darf die Prüfung der übrigen nicht verhindern.
+            try {
+                update(client);
+            } catch (Exception ex) {
+                LOG.warn("Rang-Prüfung für Client {} fehlgeschlagen: {}", client.getId(), ex.getMessage());
+            }
+        }
+    }
+
+    // synchronized: Join-Events und die regelmäßige Prüfung laufen in verschiedenen Threads.
+    private synchronized void update(Client client) {
         // Anti-Bot-Gruppe: bei diesen Nutzern verändert der Bot keine Ränge.
-        if (client == null || client.isServerQueryClient() || client.isInServerGroup(config.exemptGroup())) {
+        if (client.isServerQueryClient() || client.isInServerGroup(config.exemptGroup())) {
             return;
         }
         long accountAgeMs = System.currentTimeMillis() - client.getCreatedDate().getTime();
@@ -42,7 +60,7 @@ public final class JoinHandler {
             assignMember(client, accountAgeMs);
         }
         if (config.loyaltyEnabled()) {
-            assignLoyaltyRank(client, e.getClientId(), accountAgeMs);
+            assignLoyaltyRank(client, accountAgeMs);
         }
     }
 
@@ -55,7 +73,7 @@ public final class JoinHandler {
         }
     }
 
-    private void assignLoyaltyRank(Client client, int clientId, long accountAgeMs) {
+    private void assignLoyaltyRank(Client client, long accountAgeMs) {
         List<LoyaltyRank> ranks = config.loyaltyRanks();
         Optional<LoyaltyRank> reached = highestReached(ranks, accountAgeMs);
         if (reached.isEmpty()) {
@@ -64,7 +82,7 @@ public final class JoinHandler {
         LoyaltyRank rank = reached.get();
         if (!client.isInServerGroup(rank.groupId())) {
             api.addClientToServerGroup(rank.groupId(), client.getDatabaseId());
-            api.sendPrivateMessage(clientId, config.loyaltyMessage().replace("{label}", rank.label()));
+            api.sendPrivateMessage(client.getId(), config.loyaltyMessage().replace("{label}", rank.label()));
         }
         // Alle anderen Treue-Ränge entfernen, damit immer nur der aktuelle sichtbar ist.
         for (LoyaltyRank other : ranks) {
@@ -83,5 +101,10 @@ public final class JoinHandler {
             }
         }
         return Optional.ofNullable(result);
+    }
+
+    /** Erster Rang, dessen Dauer noch nicht erreicht ist. {@code ranks} muss aufsteigend nach Tagen sortiert sein. */
+    static Optional<LoyaltyRank> nextRank(List<LoyaltyRank> ranks, long accountAgeMs) {
+        return ranks.stream().filter(rank -> accountAgeMs < rank.durationMs()).findFirst();
     }
 }

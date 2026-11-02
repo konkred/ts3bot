@@ -8,6 +8,9 @@ import com.github.theholywaffle.teamspeak3.api.reconnect.ReconnectStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ts3bot.config.BotConfig;
+import ts3bot.feature.GroupCheck;
+import ts3bot.feature.RankChecker;
+import ts3bot.feature.RankManager;
 import ts3bot.listener.BotListener;
 
 import java.nio.file.Path;
@@ -57,8 +60,12 @@ public final class Main {
         query.connect();
 
         TS3Api api = query.getApi();
-        listener.setApi(api);
+        RankManager ranks = new RankManager(api, config);
+        listener.setApi(api, ranks);
         api.addTS3Listeners(listener);
+
+        GroupCheck.run(api, config);
+        new RankChecker(ranks).start(config.rankCheckIntervalMinutes());
 
         if (!config.startupMessage().isBlank()) {
             api.sendServerMessage(config.startupMessage());

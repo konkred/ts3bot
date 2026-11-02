@@ -7,7 +7,7 @@ import com.github.theholywaffle.teamspeak3.api.event.TS3EventAdapter;
 import com.github.theholywaffle.teamspeak3.api.event.TextMessageEvent;
 import ts3bot.config.BotConfig;
 import ts3bot.feature.CommandHandler;
-import ts3bot.feature.JoinHandler;
+import ts3bot.feature.RankManager;
 
 /** Verteilt die TeamSpeak-Events an die einzelnen Features. */
 public final class BotListener extends TS3EventAdapter {
@@ -16,16 +16,16 @@ public final class BotListener extends TS3EventAdapter {
     private volatile TS3Api api;
     private volatile int ownClientId = -1;
     private CommandHandler commands;
-    private JoinHandler joins;
+    private RankManager ranks;
 
     public BotListener(BotConfig config) {
         this.config = config;
     }
 
-    public void setApi(TS3Api api) {
+    public void setApi(TS3Api api, RankManager ranks) {
         this.api = api;
         this.commands = new CommandHandler(api, config);
-        this.joins = new JoinHandler(api, config);
+        this.ranks = ranks;
     }
 
     /** Eigene Client-ID des Bots, damit er nicht auf seine eigenen Nachrichten reagiert. */
@@ -49,6 +49,6 @@ public final class BotListener extends TS3EventAdapter {
         if (api == null) {
             return;
         }
-        joins.handle(e);
+        ranks.handleJoin(e);
     }
 }

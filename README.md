@@ -23,8 +23,12 @@ funktioniert weiter. Fehlende Schlüssel bekommen dabei die alten Standardwerte.
 |---|---|---|
 | `!ruhe` | Schaltet die „Ruhe“-Gruppe an/aus (mit Cooldown) | `feature/CommandHandler` |
 | `!botinfo` | Antwortet mit einem Info-Text | `feature/CommandHandler` |
-| Mitglied | Gast → Mitglied, wenn der erste Besuch X Minuten her ist (beim Join) | `feature/JoinHandler` |
-| Treue-Ränge | Rang nach Dauer seit dem ersten Besuch (beim Join) | `feature/JoinHandler` |
+| `!treue` | Zeigt, wie lange man dabei ist und wann der nächste Rang kommt | `feature/CommandHandler` |
+| `!help` | Listet alle Befehle auf | `feature/CommandHandler` |
+| Mitglied | Gast → Mitglied, wenn der erste Besuch X Minuten her ist | `feature/RankManager` |
+| Treue-Ränge | Rang nach Dauer seit dem ersten Besuch | `feature/RankManager` |
+| Rang-Prüfung | Prüft Mitglied und Treue-Ränge beim Join und alle 5 Minuten für alle Online-Nutzer | `feature/RankChecker` |
+| Gruppen-Check | Warnt beim Start im Log vor Gruppen-IDs, die auf dem Server fehlen | `feature/GroupCheck` |
 
 Gruppen (Standard): 11 = Gast (Standardgruppe), 10 = Member, 410 = Anti-Bot. Bei Nutzern in der
 Anti-Bot-Gruppe (`exempt-group`) verändert der Bot keine Ränge automatisch, `!ruhe` funktioniert aber weiterhin.
@@ -40,7 +44,9 @@ src/main/java/ts3bot/
   config/LoyaltyRank.java
   listener/BotListener.java   Verteilt Events an die Features
   feature/CommandHandler.java Chat-Befehle
-  feature/JoinHandler.java    Mitglied- und Treue-Ränge
+  feature/RankManager.java    Mitglied- und Treue-Ränge
+  feature/RankChecker.java    Regelmäßige Rang-Prüfung
+  feature/GroupCheck.java     Prüft beim Start die Gruppen-IDs
 ```
 
 Neue Features: eigene Klasse unter `feature/` anlegen und in `BotListener` aufrufen.

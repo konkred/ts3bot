@@ -137,6 +137,28 @@ public final class BotConfig {
         return string("command.botinfo.message");
     }
 
+    public String helpMessage() {
+        return string("command.help.message");
+    }
+
+    public String treueNextMessage() {
+        return string("command.treue.message-next");
+    }
+
+    public String treueMaxMessage() {
+        return string("command.treue.message-max");
+    }
+
+    public String treueNoRanksMessage() {
+        return string("command.treue.message-no-ranks");
+    }
+
+    // --- Regelmäßige Rang-Prüfung ---
+
+    public int rankCheckIntervalMinutes() {
+        return integer("rank-check.interval-minutes");
+    }
+
     // --- Mitglied nach Wartezeit ---
 
     public boolean memberEnabled() {

@@ -8,8 +8,10 @@ import ts3bot.config.BotConfig;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Chat-Befehle: {@code !ruhe} und {@code !botinfo}. */
+/** Chat-Befehle: {@code !ruhe}, {@code !botinfo}, {@code !treue} und {@code !help}. */
 public final class CommandHandler {
+
+    private static final long DAY_MS = 86_400_000L;
 
     private final TS3Api api;
     private final BotConfig config;
@@ -29,7 +31,38 @@ public final class CommandHandler {
             ruhe(invokerId, e.getInvokerUniqueId());
         } else if (message.startsWith("!botinfo")) {
             api.sendPrivateMessage(invokerId, config.botinfoMessage());
+        } else if (message.startsWith("!treue")) {
+            treue(invokerId, e.getInvokerUniqueId());
+        } else if (message.startsWith("!help")) {
+            api.sendPrivateMessage(invokerId, config.helpMessage());
         }
+    }
+
+    private void treue(int invokerId, String uniqueId) {
+        Client client = api.getClientByUId(uniqueId);
+        String answer = client.isInServerGroup(config.exemptGroup()) || !config.loyaltyEnabled()
+                ? config.treueNoRanksMessage()
+                : treueMessage(config, System.currentTimeMillis() - client.getCreatedDate().getTime());
+        api.sendPrivateMessage(invokerId, answer);
+    }
+
+    static String treueMessage(BotConfig config, long accountAgeMs) {
+        String days = formatDays(accountAgeMs / DAY_MS);
+        return RankManager.nextRank(config.loyaltyRanks(), accountAgeMs)
+                .map(next -> {
+                    // Aufrunden: Ein angefangener Tag zählt noch als Wartezeit.
+                    long remaining = (next.durationMs() - accountAgeMs + DAY_MS - 1) / DAY_MS;
+                    return config.treueNextMessage()
+                            .replace("{days}", days)
+                            .replace("{next}", next.label())
+                            .replace("{remaining}", formatDays(remaining));
+                })
+                .orElseGet(() -> config.treueMaxMessage().replace("{days}", days));
+    }
+
+    /** Dativ, passend zu "seit 1 Tag" und "in 308 Tagen". */
+    private static String formatDays(long days) {
+        return days == 1 ? "1 Tag" : days + " Tagen";
     }
 
     private void ruhe(int invokerId, String uniqueId) {
