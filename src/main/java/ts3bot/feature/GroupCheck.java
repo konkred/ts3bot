@@ -49,7 +49,19 @@ public final class GroupCheck {
                 groups.put("Treue-Rang " + rank.label(), rank.groupId());
             }
         }
+        addGroups(groups, config, "auto-move", "groups");
+        addGroups(groups, config, "channel-watch", "notify-groups");
+        addGroups(groups, config, "group-notify", "groups", "notify-groups");
+        addGroups(groups, config, "group-protect", "groups", "admin-groups");
         return groups;
+    }
+
+    private static void addGroups(Map<String, Integer> groups, BotConfig config, String feature, String... keys) {
+        if (config.bool(feature + ".enabled")) {
+            for (String key : keys) {
+                config.intSet(feature + "." + key).forEach(id -> groups.put(feature + "." + key + " " + id, id));
+            }
+        }
     }
 
     static List<String> missingGroups(Map<String, Integer> configured, Set<Integer> existing) {

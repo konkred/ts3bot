@@ -9,9 +9,15 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * Bot-Konfiguration aus {@code config.properties}.
@@ -138,7 +144,8 @@ public final class BotConfig {
     }
 
     public String helpMessage() {
-        return string("command.help.message");
+        String help = string("command.help.message");
+        return bool("seen.enabled") ? help + "\n" + string("seen.help-line") : help;
     }
 
     public String treueNextMessage() {
@@ -161,7 +168,7 @@ public final class BotConfig {
 
     /** ID des Bot-Channels, 0 wenn keiner eingetragen ist. */
     public int botChannelId() {
-        return string("bot-channel.id").isBlank() ? 0 : integer("bot-channel.id");
+        return integer("bot-channel.id");
     }
 
     // --- Regelmäßige Rang-Prüfung ---
@@ -203,7 +210,9 @@ public final class BotConfig {
         return loyaltyRanks;
     }
 
-    private String string(String key) {
+    // --- Allgemeine Zugriffe, die Features lesen ihre eigenen Schlüssel damit im Konstruktor ---
+
+    public String string(String key) {
         String value = props.getProperty(key);
         if (value == null) {
             throw new IllegalArgumentException("Config-Schlüssel fehlt: " + key);
@@ -211,8 +220,11 @@ public final class BotConfig {
         return value.trim();
     }
 
-    private int integer(String key) {
+    public int integer(String key) {
         String value = string(key);
+        if (value.isEmpty()) {
+            return 0;
+        }
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
@@ -220,7 +232,46 @@ public final class BotConfig {
         }
     }
 
-    private boolean bool(String key) {
+    public boolean bool(String key) {
         return Boolean.parseBoolean(string(key));
+    }
+
+    /** Durch Komma getrennte Zahlen, z. B. Gruppen- oder Channel-IDs. */
+    public Set<Integer> intSet(String key) {
+        Set<Integer> values = new LinkedHashSet<>();
+        for (String part : string(key).split(",")) {
+            if (!part.isBlank()) {
+                try {
+                    values.add(Integer.parseInt(part.trim()));
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException(key + ": Zahlen erwartet, ist aber '" + part.trim() + "'", e);
+                }
+            }
+        }
+        return values;
+    }
+
+    /** Durch Semikolon getrennte reguläre Ausdrücke, ohne Unterscheidung von Groß- und Kleinschreibung. */
+    public List<Pattern> patterns(String key) {
+        List<Pattern> patterns = new ArrayList<>();
+        for (String part : string(key).split(";")) {
+            if (!part.isBlank()) {
+                try {
+                    patterns.add(Pattern.compile(part.trim(), Pattern.CASE_INSENSITIVE));
+                } catch (PatternSyntaxException e) {
+                    throw new IllegalArgumentException(key + ": ungültiger Ausdruck '" + part.trim() + "'", e);
+                }
+            }
+        }
+        return patterns;
+    }
+
+    /** Wert in Kleinbuchstaben, muss einer der erlaubten sein. */
+    public String choice(String key, String... allowed) {
+        String value = string(key).toLowerCase(Locale.ROOT);
+        if (!List.of(allowed).contains(value)) {
+            throw new IllegalArgumentException(key + ": erlaubt sind " + List.of(allowed) + ", ist aber '" + value + "'");
+        }
+        return value;
     }
 }

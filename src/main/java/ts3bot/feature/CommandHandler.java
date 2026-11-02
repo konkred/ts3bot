@@ -18,15 +18,25 @@ public final class CommandHandler {
     /** Client-ID → Zeitpunkt der letzten erfolgreichen {@code !ruhe}-Nutzung. */
     private final Map<Integer, Long> ruheLastUsed = new ConcurrentHashMap<>();
 
-    public CommandHandler(TS3Api api, BotConfig config) {
+    private final LastSeen lastSeen;
+    private final GroupProtection protection;
+
+    public CommandHandler(TS3Api api, BotConfig config, GroupProtection protection) {
         this.api = api;
         this.config = config;
+        this.lastSeen = new LastSeen(api, config);
+        this.protection = protection;
     }
 
     public void handle(TextMessageEvent e) {
         String message = e.getMessage().toLowerCase();
         int invokerId = e.getInvokerId();
 
+        // Diese Befehle brauchen die Originalschreibweise, weil Unique-IDs groß/klein unterscheiden.
+        if (lastSeen.handle(invokerId, e.getMessage())
+                || protection.handle(invokerId, e.getInvokerUniqueId(), e.getMessage())) {
+            return;
+        }
         if (message.startsWith("!ruhe")) {
             ruhe(invokerId, e.getInvokerUniqueId());
         } else if (message.startsWith("!botinfo")) {

@@ -5,7 +5,7 @@ Java-Bot für einen TeamSpeak-3-Server, verbunden über ServerQuery mit der
 Der Quellcode ist aus der alten, nur kompiliert vorliegenden `legacy/bot.jar` (Floxiii, 2021)
 rekonstruiert. Die Funktionen der alten jar sollen sich mit den Standardwerten weiter genauso
 verhalten. Neu dazugekommen sind die regelmäßige Rang-Prüfung, `!treue`, `!help`, der Gruppen-Check,
-die Willkommensnachricht und der Bot-Channel.
+die Willkommensnachricht, der Bot-Channel und die Funktionen im unteren Teil der Config-Vorlage.
 
 Der Query-Bot ist für normale Nutzer unsichtbar, sie können ihn also nicht von sich aus anschreiben.
 Er muss sie zuerst anschreiben, dann öffnet sich bei ihnen ein Chat-Tab, in dem sie antworten können.
@@ -34,12 +34,22 @@ Java 17 ist das Kompilier-Ziel (`maven.compiler.release`), lokal ist JDK 21 inst
 - `feature/CommandHandler.java`: Chat-Befehle `!ruhe` (Gruppe an/aus mit Cooldown), `!botinfo`, `!treue`, `!help`.
 - `feature/RankManager.java`: Gast → Member nach Wartezeit und Treue-Ränge, beim Join und für alle Online-Nutzer.
   `update` ist `synchronized`, weil Join-Events und die regelmäßige Prüfung in verschiedenen Threads laufen.
-- `feature/RankChecker.java`: ruft den `RankManager` alle `rank-check.interval-minutes` Minuten auf.
+- `feature/Periodic.java`: Timer auf Daemon-Threads, fängt Exceptions ab. `Main` startet damit die Rang-Prüfung und den `client-monitor`.
 - `feature/GroupCheck.java`: warnt beim Start im Log vor Gruppen-IDs, die auf dem Server fehlen.
 - `feature/WelcomeMessage.java`: private Nachricht beim allerersten Besuch (`client_totalconnections`).
 - `feature/BotChannel.java`: optionaler Channel (`bot-channel.id`). Wer ihn betritt, bekommt die Befehlsliste
   privat. Der Bot betritt ihn im `onConnect` **vor** `registerAllEvents()`, damit der Channel-Chat dort ankommt.
 - `src/main/resources/config.default.properties`: Vorlage **und** Quelle aller Standardwerte.
+- `feature/AutoMover.java`: verschiebt oder kickt bei Aufnahme, Abwesenheit, Stummschaltung und Untätigkeit, und verschiebt zurück.
+  Wer sich selbst aus dem Ziel-Channel bewegt hat, wird nicht zurückgeholt und nicht erneut verschoben.
+- `feature/AutoMoveOnJoin.java`: verschiebt gewählte Gruppen beim Join, wenn sie im Standard-Channel landen.
+- `feature/JoinNotifications.java`: Channel-Überwachung und Servergruppen-Benachrichtigung.
+- `feature/NameFilter.java`: unerlaubte Nicknames (per `client-monitor`) und Channelnamen (per Event).
+- `feature/InactiveChannels.java`: löscht lange leere Channels, standardmäßig nur `dry-run`.
+- `feature/LastSeen.java`: Befehl `!seen`.
+- `feature/GroupProtection.java`: entfernt nicht erlaubte Mitglieder aus geschützten Gruppen. Die Liste steht in
+  `group-protection.properties` (nicht im Repo). Beim ersten Lauf werden die aktuellen Mitglieder übernommen.
+- `feature/ClientActions.java`: gemeinsame Helfer für Nachrichten, Benachrichtigungen und Strafen.
 
 Ein neues Feature bekommt eine eigene Klasse unter `feature/` und wird in `BotListener` aufgerufen.
 
@@ -49,6 +59,9 @@ Ein neues Feature bekommt eine eigene Klasse unter `feature/` und wird in `BotLi
   `config.default.properties` stehen. `BotConfig` ergänzt fehlende Schlüssel aus dieser Datei,
   deshalb funktionieren alte Configs, die nur `host`/`port`/`user`/`password`/`nickname`
   enthalten, weiter. Im Code gibt es keine eigenen Fallback-Werte.
+- Features lesen ihre Schlüssel im Konstruktor über `config.string/integer/bool/intSet/patterns/choice`. `Main` legt sie
+  vor `query.connect()` an, damit eine falsche Config den Bot mit einer klaren Meldung beendet. `FeaturesTest` prüft das.
+- Funktionen, die Nutzer verschieben, kicken oder Channels und Gruppen ändern, sind standardmäßig aus.
 - `port` ist der Port des virtuellen Servers (Name aus der alten Config). Der Query-Port heißt `query.port`.
 - Eigene `loyalty.rank.*`-Einträge ersetzen die Standard-Ränge komplett, sie werden nicht gemischt.
 - Die Datei wird als UTF-8 gelesen.
@@ -67,6 +80,11 @@ Ein neues Feature bekommt eine eigene Klasse unter `feature/` und wird in `BotLi
 
 Die Treue-Ränge rechnen wie der alte Bot mit 30-Tage-Monaten (1 Jahr = 360 Tage). Gemessen
 wird ab dem ersten Besuch auf dem Server (`client_created`), nicht nach Online-Zeit.
+
+## Hinweis zur Geschwindigkeit
+
+Mit `query.flood-rate=default` schickt die API etwa 3 Befehle pro Sekunde. Bei viel Betrieb verzögern sich
+Reaktionen um einige Sekunden. Abhilfe: Bot-IP in `query_ip_allowlist.txt` eintragen und `unlimited` setzen.
 
 ## Konventionen
 

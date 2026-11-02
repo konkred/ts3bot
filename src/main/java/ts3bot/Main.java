@@ -5,21 +5,29 @@ import com.github.theholywaffle.teamspeak3.TS3Config;
 import com.github.theholywaffle.teamspeak3.TS3Query;
 import com.github.theholywaffle.teamspeak3.api.reconnect.ConnectionHandler;
 import com.github.theholywaffle.teamspeak3.api.reconnect.ReconnectStrategy;
+import com.github.theholywaffle.teamspeak3.api.wrapper.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ts3bot.config.BotConfig;
+import ts3bot.feature.Announcements;
+import ts3bot.feature.AutoMover;
 import ts3bot.feature.BotChannel;
 import ts3bot.feature.GroupCheck;
-import ts3bot.feature.RankChecker;
+import ts3bot.feature.GroupProtection;
+import ts3bot.feature.InactiveChannels;
+import ts3bot.feature.NameFilter;
+import ts3bot.feature.Periodic;
 import ts3bot.feature.RankManager;
 import ts3bot.listener.BotListener;
 
 import java.nio.file.Path;
+import java.util.List;
 
 public final class Main {
 
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     private static final Path CONFIG_FILE = Path.of("config.properties");
+    private static final Path PROTECTION_FILE = Path.of("group-protection.properties");
 
     private Main() {
     }
@@ -59,15 +67,33 @@ public final class Main {
                 });
 
         TS3Query query = new TS3Query(tsConfig);
-        query.connect();
-
         TS3Api api = query.getApi();
+
+        // Vor dem Verbinden anlegen: Ein Fehler in der Config beendet den Bot so mit einer klaren Meldung.
         RankManager ranks = new RankManager(api, config);
-        listener.setApi(api, ranks);
+        AutoMover mover = new AutoMover(api, config);
+        NameFilter names = new NameFilter(api, config);
+        InactiveChannels inactiveChannels = new InactiveChannels(api, config);
+        GroupProtection protection = new GroupProtection(api, config, PROTECTION_FILE);
+        listener.setApi(api, ranks, names, protection);
+
+        query.connect();
         api.addTS3Listeners(listener);
 
         GroupCheck.run(api, config);
-        new RankChecker(ranks).start(config.rankCheckIntervalMinutes());
+        Periodic.every("rank-check", config.rankCheckIntervalMinutes() * 60L, ranks::checkOnlineClients);
+        if (mover.isActive() || names.isNicknameActive()) {
+            Periodic.every("client-monitor", config.integer("monitor.interval-seconds"), () -> {
+                List<Client> clients = api.getClients();
+                mover.check(clients);
+                if (names.isNicknameActive()) {
+                    names.checkNicknames(clients);
+                }
+            });
+        }
+        Announcements.start(api, config);
+        inactiveChannels.start();
+        protection.start();
 
         if (!config.startupMessage().isBlank()) {
             api.sendServerMessage(config.startupMessage());
