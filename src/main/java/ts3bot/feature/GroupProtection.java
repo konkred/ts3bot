@@ -2,6 +2,7 @@ package ts3bot.feature;
 
 import com.github.theholywaffle.teamspeak3.TS3Api;
 import com.github.theholywaffle.teamspeak3.api.wrapper.Client;
+import com.github.theholywaffle.teamspeak3.api.wrapper.DatabaseClientInfo;
 import com.github.theholywaffle.teamspeak3.api.wrapper.ServerGroupClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,8 +39,13 @@ public final class GroupProtection {
     private final int checkSeconds;
     private final Set<Integer> groups;
     private final Set<Integer> adminGroups;
+    private final Set<String> adminUsers;
     private final String usage;
-    private final String done;
+    private final String disabled;
+    private final String denied;
+    private final String notProtected;
+    private final String added;
+    private final String removed;
     private final String notFound;
     /** Gruppen-ID → erlaubte Unique-IDs, durch Komma getrennt. */
     private final Properties allowed = new Properties();
@@ -51,8 +57,13 @@ public final class GroupProtection {
         checkSeconds = config.integer("group-protect.check-seconds");
         groups = config.intSet("group-protect.groups");
         adminGroups = config.intSet("group-protect.admin-groups");
+        adminUsers = config.stringSet("group-protect.admin-users");
         usage = config.string("group-protect.usage");
-        done = config.string("group-protect.message-done");
+        disabled = config.string("group-protect.message-disabled");
+        denied = config.string("group-protect.message-denied");
+        notProtected = config.string("group-protect.message-not-protected");
+        added = config.string("group-protect.message-added");
+        removed = config.string("group-protect.message-removed");
         notFound = config.string("group-protect.message-not-found");
         if (Files.exists(file)) {
             try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
@@ -63,6 +74,10 @@ public final class GroupProtection {
 
     public void start() {
         if (enabled) {
+            if (adminGroups.isEmpty() && adminUsers.isEmpty()) {
+                LOG.warn("Gruppen-Schutz: Weder group-protect.admin-groups noch group-protect.admin-users ist gesetzt, "
+                        + "niemand kann die Liste per Chat ändern.");
+            }
             Periodic.every("group-protect", checkSeconds, this::check);
         }
     }
@@ -91,23 +106,34 @@ public final class GroupProtection {
     public synchronized boolean handle(int invokerId, String invokerUid, String message) {
         String lower = message.toLowerCase(Locale.ROOT);
         boolean add = lower.startsWith(ADD);
-        if (!enabled || !(add || lower.startsWith(REMOVE))) {
+        if (!add && !lower.startsWith(REMOVE)) {
             return false;
         }
-        // Keine Antwort an Nutzer ohne Rechte: Die Befehle sollen nicht auffallen.
-        if (!ClientActions.inAnyGroup(api.getClientByUId(invokerUid), adminGroups)) {
-            return true;
+        api.sendPrivateMessage(invokerId, answer(invokerUid, message, add));
+        return true;
+    }
+
+    private String answer(String invokerUid, String message, boolean add) {
+        if (!enabled) {
+            return disabled;
+        }
+        if (!isAdmin(invokerUid)) {
+            LOG.info("Gruppen-Schutz: Befehl abgelehnt für {}, steht nicht in admin-groups oder admin-users.", invokerUid);
+            return denied;
         }
         String[] args = message.trim().split("\\s+", 3);
-        Integer group = args.length == 3 ? parseProtectedGroup(args[1]) : null;
-        if (group == null) {
-            api.sendPrivateMessage(invokerId, usage);
-            return true;
+        if (args.length < 3 || !args[1].matches("\\d+")) {
+            return usage;
         }
-        String uid = resolveUid(args[2]);
+        int group = Integer.parseInt(args[1]);
+        if (!groups.contains(group)) {
+            String list = groups.stream().map(String::valueOf).collect(Collectors.joining(", "));
+            return notProtected.replace("{groups}", list).replace("{group}", args[1]);
+        }
+        String name = ClientLookup.cleanInput(args[2]);
+        String uid = resolveUid(name);
         if (uid == null) {
-            api.sendPrivateMessage(invokerId, notFound.replace("{name}", args[2]));
-            return true;
+            return notFound.replace("{name}", name);
         }
         Set<String> ids = allowedIds(group);
         if (add) {
@@ -116,31 +142,18 @@ public final class GroupProtection {
             ids.remove(uid);
         }
         store(group, ids);
-        api.sendPrivateMessage(invokerId, done.replace("{name}", args[2]).replace("{group}", args[1]));
-        return true;
+        return (add ? added : removed).replace("{group}", args[1]).replace("{name}", name);
     }
 
-    private Integer parseProtectedGroup(String value) {
-        try {
-            int group = Integer.parseInt(value);
-            return groups.contains(group) ? group : null;
-        } catch (NumberFormatException e) {
-            return null;
-        }
+    private boolean isAdmin(String uid) {
+        return adminUsers.contains(uid) || ClientActions.inAnyGroup(api.getClientByUId(uid), adminGroups);
     }
 
-    /** Sucht zuerst nach dem Nickname eines Online-Nutzers, sonst wird der Text als Unique-ID geprüft. */
+    /** Nur exakte Treffer: Ein Teilstück des Namens darf nie den falschen Nutzer freischalten. */
     private String resolveUid(String nameOrUid) {
-        for (Client client : api.getClients()) {
-            if (client.getNickname().equalsIgnoreCase(nameOrUid)) {
-                return client.getUniqueIdentifier();
-            }
-        }
-        try {
-            return api.getDatabaseClientByUId(nameOrUid).getUniqueIdentifier();
-        } catch (Exception e) {
-            return null;
-        }
+        return ClientLookup.online(api, nameOrUid).map(Client::getUniqueIdentifier)
+                .or(() -> ClientLookup.byUid(api, nameOrUid).map(DatabaseClientInfo::getUniqueIdentifier))
+                .orElse(null);
     }
 
     private Set<String> allowedIds(int group) {

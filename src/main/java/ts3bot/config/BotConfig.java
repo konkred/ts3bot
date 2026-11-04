@@ -251,6 +251,17 @@ public final class BotConfig {
         return values;
     }
 
+    /** Durch Komma getrennte Texte, z. B. Unique-IDs. */
+    public Set<String> stringSet(String key) {
+        Set<String> values = new LinkedHashSet<>();
+        for (String part : string(key).split(",")) {
+            if (!part.isBlank()) {
+                values.add(part.trim());
+            }
+        }
+        return values;
+    }
+
     /** Durch Semikolon getrennte reguläre Ausdrücke, ohne Unterscheidung von Groß- und Kleinschreibung. */
     public List<Pattern> patterns(String key) {
         List<Pattern> patterns = new ArrayList<>();

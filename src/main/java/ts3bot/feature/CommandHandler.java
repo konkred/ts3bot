@@ -3,14 +3,19 @@ package ts3bot.feature;
 import com.github.theholywaffle.teamspeak3.TS3Api;
 import com.github.theholywaffle.teamspeak3.api.event.TextMessageEvent;
 import com.github.theholywaffle.teamspeak3.api.wrapper.Client;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ts3bot.config.BotConfig;
 
+import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** Chat-Befehle: {@code !ruhe}, {@code !botinfo}, {@code !treue} und {@code !help}. */
 public final class CommandHandler {
 
+    private static final Logger LOG = LoggerFactory.getLogger(CommandHandler.class);
     private static final long DAY_MS = 86_400_000L;
 
     private final TS3Api api;
@@ -29,6 +34,16 @@ public final class CommandHandler {
     }
 
     public void handle(TextMessageEvent e) {
+        // Ohne das bliebe ein fehlgeschlagener Befehl für den Nutzer ohne jede Antwort.
+        try {
+            dispatch(e);
+        } catch (Exception ex) {
+            LOG.warn("Befehl '{}' von {} fehlgeschlagen: {}", e.getMessage(), e.getInvokerName(), ex.getMessage());
+            api.sendPrivateMessage(e.getInvokerId(), config.string("command.error-message"));
+        }
+    }
+
+    private void dispatch(TextMessageEvent e) {
         String message = e.getMessage().toLowerCase();
         int invokerId = e.getInvokerId();
 
@@ -42,37 +57,77 @@ public final class CommandHandler {
         } else if (message.startsWith("!botinfo")) {
             api.sendPrivateMessage(invokerId, config.botinfoMessage());
         } else if (message.startsWith("!treue")) {
-            treue(invokerId, e.getInvokerUniqueId());
+            String name = ClientLookup.cleanInput(e.getMessage().substring("!treue".length()));
+            api.sendPrivateMessage(invokerId, name.isEmpty() ? ownTreue(e.getInvokerUniqueId()) : otherTreue(name));
         } else if (message.startsWith("!help")) {
             api.sendPrivateMessage(invokerId, config.helpMessage());
         }
     }
 
-    private void treue(int invokerId, String uniqueId) {
+    private String ownTreue(String uniqueId) {
         Client client = api.getClientByUId(uniqueId);
-        String answer = client.isInServerGroup(config.exemptGroup()) || !config.loyaltyEnabled()
+        return client.isInServerGroup(config.exemptGroup()) || !config.loyaltyEnabled()
                 ? config.treueNoRanksMessage()
                 : treueMessage(config, System.currentTimeMillis() - client.getCreatedDate().getTime());
-        api.sendPrivateMessage(invokerId, answer);
+    }
+
+    private String otherTreue(String name) {
+        Optional<Client> online = ClientLookup.online(api, name);
+        if (online.isPresent()) {
+            Client client = online.get();
+            return otherTreue(client.getNickname(), client.getCreatedDate(), client.isInServerGroup(config.exemptGroup()));
+        }
+        return ClientLookup.inDatabase(api, name)
+                .map(client -> otherTreue(client.getNickname(), client.getCreatedDate(), isExempt(client.getDatabaseId())))
+                .orElseGet(() -> config.string("command.treue.other-unknown").replace("{name}", name));
+    }
+
+    private String otherTreue(String nickname, Date created, boolean exempt) {
+        return exempt || !config.loyaltyEnabled()
+                ? config.string("command.treue.other-no-ranks").replace("{name}", nickname)
+                : treueOtherMessage(config, nickname, System.currentTimeMillis() - created.getTime());
+    }
+
+    private boolean isExempt(int databaseId) {
+        return api.getServerGroupsByClientId(databaseId).stream().anyMatch(group -> group.getId() == config.exemptGroup());
     }
 
     static String treueMessage(BotConfig config, long accountAgeMs) {
-        String days = formatDays(accountAgeMs / DAY_MS);
+        return formatTreue(config, accountAgeMs, config.treueNextMessage(), config.treueMaxMessage());
+    }
+
+    static String treueOtherMessage(BotConfig config, String nickname, long accountAgeMs) {
+        return formatTreue(config, accountAgeMs, config.string("command.treue.other-next"), config.string("command.treue.other-max"))
+                .replace("{name}", nickname);
+    }
+
+    private static String formatTreue(BotConfig config, long accountAgeMs, String nextTemplate, String maxTemplate) {
+        String days = formatDuration(accountAgeMs / DAY_MS);
         return RankManager.nextRank(config.loyaltyRanks(), accountAgeMs)
                 .map(next -> {
                     // Aufrunden: Ein angefangener Tag zählt noch als Wartezeit.
                     long remaining = (next.durationMs() - accountAgeMs + DAY_MS - 1) / DAY_MS;
-                    return config.treueNextMessage()
+                    return nextTemplate
                             .replace("{days}", days)
                             .replace("{next}", next.label())
-                            .replace("{remaining}", formatDays(remaining));
+                            .replace("{remaining}", formatDuration(remaining));
                 })
-                .orElseGet(() -> config.treueMaxMessage().replace("{days}", days));
+                .orElseGet(() -> maxTemplate.replace("{days}", days));
     }
 
-    /** Dativ, passend zu "seit 1 Tag" und "in 308 Tagen". */
-    private static String formatDays(long days) {
-        return days == 1 ? "1 Tag" : days + " Tagen";
+    /** Dativ, passend zu "seit 11 Jahren und 212 Tagen" und "in 1 Tag". Ein Jahr zählt 365 Tage. */
+    static String formatDuration(long days) {
+        long years = days / 365;
+        long rest = days % 365;
+        if (years == 0) {
+            return unit(rest, "Tag", "Tagen");
+        }
+        String yearText = unit(years, "Jahr", "Jahren");
+        return rest == 0 ? yearText : yearText + " und " + unit(rest, "Tag", "Tagen");
+    }
+
+    private static String unit(long count, String singular, String plural) {
+        return count + " " + (count == 1 ? singular : plural);
     }
 
     private void ruhe(int invokerId, String uniqueId) {

@@ -7,8 +7,8 @@ Der Quellcode ist aus der alten, nur kompiliert vorliegenden `bot.jar` von Floxi
 unter [legacy/bot.jar](legacy/bot.jar) liegt. Grundlage ist die
 [TeamSpeak-3-Java-API](https://github.com/TheHolyWaffle/TeamSpeak-3-Java-API).
 
-Bisher ist der Bot mit Unit-Tests und gegen einen simulierten Query-Server getestet, noch nicht auf einem
-echten TeamSpeak-Server.
+Der Bot ist mit Unit-Tests und gegen einen simulierten Query-Server getestet und läuft auf einem echten
+TeamSpeak-Server. Dort sind noch nicht alle optionalen Funktionen erprobt.
 
 - [Einrichtung](#einrichtung)
 - [Funktionen](#funktionen)
@@ -165,8 +165,13 @@ haben und nicht der Standard-Channel sein, sonst bekommt jeder bei jedem Join di
 
 ### Update
 
-Neue Jar in den Ordner legen und den Bot damit neu starten. `config.properties` bleibt, wie sie ist: Fehlende
-Schlüssel ergänzt der Bot automatisch mit den Standardwerten. Auch die Config des alten Bots funktioniert weiter.
+Neue Jar in den Ordner legen und den Bot damit neu starten. Der Bot verändert `config.properties` dabei nicht,
+auch die Config des alten Bots funktioniert weiter. Für Schlüssel, die in der Datei fehlen, nutzt er beim Laufen
+die Standardwerte, sie erscheinen aber nicht in der Datei.
+
+Um eine neue Einstellung zu ändern, kopiere ihren Schlüssel aus
+[config.default.properties](src/main/resources/config.default.properties) in deine `config.properties`, passe
+den Wert an und starte den Bot neu.
 
 ## Funktionen
 
@@ -196,12 +201,12 @@ privat. Der Server-Chat wird bewusst ignoriert.
 | Befehl | Beschreibung | Verfügbar |
 |---|---|---|
 | `!help` | Listet die Befehle auf | immer |
-| `!treue` | Zeigt, wie lange man dabei ist und wann der nächste Rang kommt | immer |
+| `!treue [Name]` | Zeigt, wie lange man selbst oder ein anderer Nutzer dabei ist und wann der nächste Rang kommt | immer |
 | `!ruhe` | Schaltet die Ruhe-Gruppe an oder aus | immer |
 | `!botinfo` | Infotext zum Bot | immer |
 | `!seen <Name>` | Zeigt, wann jemand zuletzt online war | mit `seen.enabled=true` |
-| `!schutz-add <Gruppe> <Name>` | Erlaubt einem Nutzer eine geschützte Gruppe | mit Gruppen-Schutz, nur für `group-protect.admin-groups` |
-| `!schutz-del <Gruppe> <Name>` | Entzieht die Erlaubnis | mit Gruppen-Schutz, nur für `group-protect.admin-groups` |
+| `!schutz-add <Gruppe> <Name oder Unique-ID>` | Erlaubt einem Nutzer eine geschützte Gruppe | mit Gruppen-Schutz, siehe unten |
+| `!schutz-del <Gruppe> <Name oder Unique-ID>` | Entzieht die Erlaubnis | mit Gruppen-Schutz, siehe unten |
 
 ### Optional, standardmäßig aus
 
@@ -254,6 +259,13 @@ Das solltest du dabei wissen:
 - Der Query-Login braucht die passenden Rechte zum Kicken, Bannen, Verschieben und Löschen.
 - Beim Gruppen-Schutz keine Gruppen eintragen, die der Bot selbst vergibt. Die erlaubten Nutzer stehen in
   `group-protection.properties` neben der Jar. Beim ersten Lauf übernimmt der Bot die aktuellen Mitglieder.
+- Die Liste per Chat ändern dürfen nur die Mitglieder von `group-protect.admin-groups` und die Nutzer in
+  `group-protect.admin-users` (Unique-IDs). Sind beide leer, darf es niemand:
+
+  ```properties
+  group-protect.admin-groups=9
+  group-protect.admin-users=XEP638xkA3770DrBmhXZ0y8L6Ng=
+  ```
 - Inaktive Channels: Der Standard-Channel, Channels mit Unterchanneln und Channels, die der Bot selbst braucht,
   bleiben immer erhalten. Permanente Channels bleiben, solange `inactive-channel.keep-permanent=true` gilt.
 
@@ -266,6 +278,8 @@ Das solltest du dabei wissen:
 | Fehler beim Login | `user` und `password` prüfen. Das ist der Query-Login, nicht der normale TeamSpeak-Zugang. |
 | `Servergruppe aus der Config existiert nicht auf dem Server` | ID in der Config anpassen, siehe [Gruppen-IDs](#4-gruppen-ids-anpassen). |
 | `Bot-Channel … konnte nicht betreten werden` | Channel-ID, Rechte des Query-Logins und ein mögliches Channel-Passwort prüfen. |
+| `Du darfst den Gruppen-Schutz nicht bearbeiten.` | Gruppe in `group-protect.admin-groups` oder Unique-ID in `group-protect.admin-users` eintragen und neu starten. Das Log nennt die abgelehnte Unique-ID. |
+| `Das hat leider nicht geklappt` als Antwort auf einen Befehl | Die Ursache steht im Log unter `Befehl … fehlgeschlagen`, oft fehlen Rechte oder Schreibzugriff auf `group-protection.properties`. |
 | Bot reagiert verzögert | Bot-IP in die Allowlist eintragen und `query.flood-rate=unlimited` setzen. |
 | Bot wird vom Server gesperrt | Spam-Sperre: `query.flood-rate=default` nutzen oder die Bot-IP in die Allowlist eintragen. |
 | Nutzer können den Bot nicht anschreiben | Er ist für sie unsichtbar, siehe [Bot-Channel](#bot-channel-einrichten-empfohlen). |
@@ -290,6 +304,7 @@ src/main/java/ts3bot/
   feature/Announcements.java      Regelmäßige Ankündigungen
   feature/BotChannel.java         Befehlsliste beim Betreten des Bot-Channels
   feature/ClientActions.java      Gemeinsame Helfer für Nachrichten und Strafen
+  feature/ClientLookup.java       Findet Nutzer zu einer Chat-Eingabe
   feature/CommandHandler.java     Chat-Befehle
   feature/GroupCheck.java         Prüft beim Start die Gruppen-IDs
   feature/GroupProtection.java    Gruppen-Schutz

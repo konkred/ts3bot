@@ -25,7 +25,7 @@ class CommandHandlerTest {
 
     @Test
     void treueShowsNextRank() throws IOException {
-        assertEquals("Du bist seit 412 Tagen dabei. Nächster Rang: [B]2 Jahre[/B] in 308 Tagen.",
+        assertEquals("Du bist seit 1 Jahr und 47 Tagen dabei. Nächster Rang: [B]2 Jahre[/B] in 308 Tagen.",
                 CommandHandler.treueMessage(defaults(), 412 * DAY));
     }
 
@@ -39,7 +39,30 @@ class CommandHandlerTest {
 
     @Test
     void treueAfterHighestRank() throws IOException {
-        assertEquals("Du bist seit 3000 Tagen dabei und hast den höchsten Treue-Rang erreicht. Vielen Dank für deine Treue :)",
+        assertEquals("Du bist seit 8 Jahren und 80 Tagen dabei und hast den höchsten Treue-Rang erreicht. Vielen Dank für deine Treue :)",
                 CommandHandler.treueMessage(defaults(), 3000 * DAY));
+    }
+
+    @Test
+    void treueForOtherUser() throws IOException {
+        assertEquals("avi ist seit 1 Jahr und 47 Tagen dabei. Nächster Rang: [B]2 Jahre[/B] in 308 Tagen.",
+                CommandHandler.treueOtherMessage(defaults(), "avi", 412 * DAY));
+        assertEquals("avi ist seit 8 Jahren und 80 Tagen dabei und hat den höchsten Treue-Rang erreicht.",
+                CommandHandler.treueOtherMessage(defaults(), "avi", 3000 * DAY));
+    }
+
+    @Test
+    void durationSwitchesToYearsAt365Days() {
+        assertEquals("364 Tagen", CommandHandler.formatDuration(364));
+        assertEquals("1 Jahr", CommandHandler.formatDuration(365));
+        assertEquals("1 Jahr und 1 Tag", CommandHandler.formatDuration(366));
+        assertEquals("2 Jahren", CommandHandler.formatDuration(730));
+        assertEquals("11 Jahren und 212 Tagen", CommandHandler.formatDuration(4227));
+    }
+
+    @Test
+    void nameLinksFromTheClientAreCleaned() {
+        assertEquals("K3VK0", ClientLookup.cleanInput(" [URL=client://12/XEP638xkA3770DrBmhXZ0y8L6Ng=~K3VK0]K3VK0[/URL] "));
+        assertEquals("K3VK0", ClientLookup.cleanInput("K3VK0"));
     }
 }

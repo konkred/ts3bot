@@ -95,6 +95,12 @@ class FeaturesTest {
     }
 
     @Test
+    void uniqueIdListsKeepTheirSpecialCharacters() throws IOException {
+        assertEquals(Set.of("XEP638xkA3770DrBmhXZ0y8L6Ng=", "a+b/c="),
+                config("group-protect.admin-users=XEP638xkA3770DrBmhXZ0y8L6Ng=, a+b/c=\n").stringSet("group-protect.admin-users"));
+    }
+
+    @Test
     void groupListsAreParsed() throws IOException {
         assertEquals(Set.of(1, 2), config("auto-move.groups=1, 2\n").intSet("auto-move.groups"));
         assertTrue(config("").intSet("auto-move.groups").isEmpty());
