@@ -103,6 +103,6 @@ Reaktionen um einige Sekunden. Abhilfe: Bot-IP in `query_ip_allowlist.txt` eintr
 1. Version in `pom.xml` erhöhen.
 2. `mvn clean package`, dann `cp target/bot.jar target/ts3bot-<version>.jar`.
 3. Committen, pushen, Tag `v<version>` setzen und pushen.
-4. `gh release create v<version> target/ts3bot-<version>.jar --repo konkred/ts3bot_avrx`
+4. `gh release create v<version> target/ts3bot-<version>.jar --repo konkred/ts3bot`
 
-Das Repo `konkred/ts3bot_avrx` ist privat. Gepusht wird per SSH, `gh` ist für Releases eingerichtet.
+Das Repo `konkred/ts3bot` ist öffentlich. Gepusht wird per SSH, `gh` ist für Releases eingerichtet.

@@ -27,13 +27,13 @@ TeamSpeak-Server. Dort sind noch nicht alle optionalen Funktionen erprobt.
 ### 1. Jar herunterladen
 
 Die aktuelle `ts3bot-<version>.jar` liegt unter
-[Releases](https://github.com/konkred/ts3bot_avrx/releases). Das Repo ist privat, deshalb braucht der Download
-ein GitHub-Konto mit Zugriff. Lege die Datei in einen eigenen Ordner, z. B. `/opt/ts3bot`.
+[Releases](https://github.com/konkred/ts3bot/releases). Das Repo ist öffentlich, der Download braucht also
+kein GitHub-Konto. Lege die Datei in einen eigenen Ordner, z. B. `/opt/ts3bot`.
 
 Mit der GitHub-CLI geht das so:
 
 ```bash
-gh release download --repo konkred/ts3bot_avrx --pattern 'ts3bot-*.jar' --dir /opt/ts3bot
+gh release download --repo konkred/ts3bot --pattern 'ts3bot-*.jar' --dir /opt/ts3bot
 ```
 
 ### 2. Config anlegen
