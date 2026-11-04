@@ -6,7 +6,7 @@
 
     <groupId>ts3bot</groupId>
     <artifactId>ts3bot</artifactId>
-    <version>2.4.2</version>
+    <version>2.4.3</version>
     <packaging>jar</packaging>
 
     <properties>

@@ -65,6 +65,9 @@ public final class CommandHandler {
             api.sendPrivateMessage(invokerId, name.isEmpty() ? ownTreue(uniqueId) : otherTreueIfAllowed(uniqueId, name));
         } else if (message.startsWith("!help")) {
             api.sendPrivateMessage(invokerId, config.helpMessage());
+        } else if (message.startsWith("!") && !config.string("command.unknown-message").isBlank()) {
+            // Nur mit "!": Normale Nachrichten im Channel-Chat sind keine Befehle.
+            api.sendPrivateMessage(invokerId, config.string("command.unknown-message"));
         }
     }
 

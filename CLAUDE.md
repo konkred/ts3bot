@@ -32,7 +32,8 @@ Java 17 ist das Kompilier-Ziel (`maven.compiler.release`), lokal ist JDK 21 inst
 - `listener/BotListener.java`: einziger `TS3EventAdapter`. Verteilt Events an die Features und
   ignoriert die eigenen Nachrichten des Bots.
 - `feature/CommandHandler.java`: Chat-Befehle `!ruhe` (Gruppe an/aus mit Cooldown), `!botinfo`, `!treue [Name]`, `!help`.
-  Jeder Befehl antwortet immer, auch bei Fehlern (`command.error-message`). Stilles Ignorieren vermeiden.
+  Jeder Befehl antwortet immer, auch bei Fehlern (`command.error-message`) und unbekannten Befehlen (`command.unknown-message`).
+  Stilles Ignorieren vermeiden. Nachrichten ohne `!` bleiben unbeantwortet.
   `!treue <Name>` dürfen alle, außer `command.treue.other-groups` ist gesetzt.
 - `feature/ClientLookup.java`: findet Nutzer zu einer Chat-Eingabe, auch wenn der Client den Namen als Link schickt.
   Namen sind nicht eindeutig: Bei mehreren Treffern zeigt der Bot eine Liste (`lookup.*`), nie stillschweigend den ersten.

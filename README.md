@@ -196,7 +196,8 @@ Bei Nutzern in der Anti-Bot-Gruppe (`exempt-group`) ändert der Bot keine Ränge
 ### Chat-Befehle
 
 Der Bot reagiert auf private Nachrichten und im Chat des Channels, in dem er sitzt. Die Antwort kommt immer
-privat. Der Server-Chat wird bewusst ignoriert.
+privat. Der Server-Chat wird bewusst ignoriert. Auf unbekannte Befehle mit `!` antwortet er mit einem Hinweis auf
+`!help` (`command.unknown-message`, leer schaltet das ab).
 
 | Befehl | Beschreibung | Verfügbar |
 |---|---|---|
