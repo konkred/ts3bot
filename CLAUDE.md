@@ -35,6 +35,9 @@ Java 17 ist das Kompilier-Ziel (`maven.compiler.release`), lokal ist JDK 21 inst
   Jeder Befehl antwortet immer, auch bei Fehlern (`command.error-message`). Stilles Ignorieren vermeiden.
   `!treue <Name>` dürfen alle, außer `command.treue.other-groups` ist gesetzt.
 - `feature/ClientLookup.java`: findet Nutzer zu einer Chat-Eingabe, auch wenn der Client den Namen als Link schickt.
+  Namen sind nicht eindeutig: Bei mehreren Treffern zeigt der Bot eine Liste (`lookup.*`), nie stillschweigend den ersten.
+  Die API fragt jeden Datenbank-Treffer einzeln ab, deshalb ist `%` in der Eingabe gesperrt.
+  Der Gruppen-Schutz listet nichts, sondern verlangt bei mehrdeutigen Namen die Unique-ID.
 - `feature/RankManager.java`: Gast → Member nach Wartezeit und Treue-Ränge, beim Join und für alle Online-Nutzer.
   `update` ist `synchronized`, weil Join-Events und die regelmäßige Prüfung in verschiedenen Threads laufen.
 - `feature/Periodic.java`: Timer auf Daemon-Threads, fängt Exceptions ab. `Main` startet damit die Rang-Prüfung und den `client-monitor`.
@@ -51,7 +54,7 @@ Java 17 ist das Kompilier-Ziel (`maven.compiler.release`), lokal ist JDK 21 inst
 - `feature/InactiveChannels.java`: löscht lange leere Channels, standardmäßig nur `dry-run`.
 - `feature/LastSeen.java`: Befehl `!seen`.
 - `feature/GroupProtection.java`: entfernt nicht erlaubte Mitglieder aus geschützten Gruppen. Die Liste steht in
-  `group-protection.properties` (nicht im Repo). Beim ersten Lauf werden die aktuellen Mitglieder übernommen.
+  `group-protection.properties` (nicht im Repo). Beim ersten Lauf oder ersten Chat-Befehl für eine Gruppe werden die aktuellen Mitglieder übernommen.
   Die Liste per Chat ändern dürfen `group-protect.admin-groups` (Gruppen-IDs) und `group-protect.admin-users` (Unique-IDs).
 - `feature/ClientActions.java`: gemeinsame Helfer für Nachrichten, Benachrichtigungen und Strafen.
 

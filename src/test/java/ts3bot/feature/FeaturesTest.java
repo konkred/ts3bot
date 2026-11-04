@@ -52,6 +52,12 @@ class FeaturesTest {
     }
 
     @Test
+    void invalidMaxResultsFailsAtStartup() throws IOException {
+        BotConfig config = config("lookup.max-results=0\n");
+        assertThrows(IllegalArgumentException.class, () -> new CommandHandler(null, config, null));
+    }
+
+    @Test
     void invalidTreueGroupsFailAtStartup() throws IOException {
         BotConfig config = config("command.treue.other-groups=admin\n");
         assertThrows(IllegalArgumentException.class, () -> new CommandHandler(null, config, null));

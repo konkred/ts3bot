@@ -208,6 +208,8 @@ privat. Der Server-Chat wird bewusst ignoriert.
 | `!schutz-add <Gruppe> <Name oder Unique-ID>` | Erlaubt einem Nutzer eine geschützte Gruppe | mit Gruppen-Schutz, siehe unten |
 | `!schutz-del <Gruppe> <Name oder Unique-ID>` | Entzieht die Erlaubnis | mit Gruppen-Schutz, siehe unten |
 
+Haben mehrere Nutzer denselben Namen, zeigen `!seen` und `!treue <Name>` eine Liste mit Unique-IDs, höchstens `lookup.max-results` Einträge. Mit `!seen <Unique-ID>` oder `!treue <Unique-ID>` fragt man dann genau einen Nutzer ab. `!schutz-add` und `!schutz-del` verlangen die Unique-ID, wenn mehrere Nutzer dieses Namens online sind.
+
 ### Optional, standardmäßig aus
 
 | Funktion | Beschreibung | Schlüssel |
@@ -258,7 +260,7 @@ Das solltest du dabei wissen:
   gehört in `ignore-groups` der jeweiligen Funktion. Das gilt auch für Admins.
 - Der Query-Login braucht die passenden Rechte zum Kicken, Bannen, Verschieben und Löschen.
 - Beim Gruppen-Schutz keine Gruppen eintragen, die der Bot selbst vergibt. Die erlaubten Nutzer stehen in
-  `group-protection.properties` neben der Jar. Beim ersten Lauf übernimmt der Bot die aktuellen Mitglieder.
+  `group-protection.properties` neben der Jar. Beim ersten Lauf oder ersten Chat-Befehl für eine Gruppe übernimmt der Bot die aktuellen Mitglieder.
 - Die Liste per Chat ändern dürfen nur die Mitglieder von `group-protect.admin-groups` und die Nutzer in
   `group-protect.admin-users` (Unique-IDs). Sind beide leer, darf es niemand:
 

@@ -5,10 +5,16 @@ import org.junit.jupiter.api.io.TempDir;
 import ts3bot.config.BotConfig;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CommandHandlerTest {
 
@@ -58,6 +64,59 @@ class CommandHandlerTest {
         assertEquals("1 Jahr und 1 Tag", CommandHandler.formatDuration(366));
         assertEquals("2 Jahren", CommandHandler.formatDuration(730));
         assertEquals("11 Jahren und 212 Tagen", CommandHandler.formatDuration(4227));
+    }
+
+    private static ClientLookup.Match match(String nickname, String uid, boolean online, long lastConnectedDay) {
+        return new ClientLookup.Match(nickname, uid, 1, online, new Date(0), new Date(lastConnectedDay * DAY));
+    }
+
+    @Test
+    void exactNamesWinAndRecentUsersComeFirst() {
+        List<ClientLookup.Match> result = ClientLookup.combine(
+                List.of(match("Hans", "online", true, 1)),
+                List.of(match("Hans", "alt", false, 2), match("hans", "neu", false, 9), match("Hansi", "teil", false, 50), match("Hans", "online", false, 1)),
+                "Hans");
+        assertEquals(List.of("online", "neu", "alt"), result.stream().map(ClientLookup.Match::uid).toList());
+    }
+
+    @Test
+    void partialNamesAreKeptWithoutExactMatch() {
+        List<ClientLookup.Match> result = ClientLookup.combine(List.of(), List.of(match("Hansi", "a", false, 1), match("Hansel", "b", false, 2)), "Hans");
+        assertEquals(List.of("b", "a"), result.stream().map(ClientLookup.Match::uid).toList());
+    }
+
+    @Test
+    void sameUserConnectedTwiceCountsOnce() {
+        assertEquals(1, ClientLookup.combine(List.of(match("Hans", "a", true, 1), match("Hans", "a", true, 1)), List.of(), "Hans").size());
+    }
+
+    @Test
+    void listNamesTheHiddenUsers() throws IOException {
+        Files.writeString(dir.resolve("config.properties"), "lookup.max-results=2\n");
+        BotConfig config = BotConfig.load(dir.resolve("config.properties"));
+        List<ClientLookup.Match> matches = List.of(match("Hans", "a", false, 1), match("Hans", "b", false, 1), match("Hans", "c", false, 1));
+        assertEquals("""
+                Zu "Hans" gibt es 3 Nutzer:
+                1. Hans – seit 1 Tag dabei – UID: a
+                2. Hans – seit 1 Tag dabei – UID: b
+                … und 1 weitere
+                Für genau einen Nutzer: !treue <Unique-ID>""",
+                ClientLookup.listMessage(config, "Hans", "!treue", matches, (number, m) -> CommandHandler.treueLine(config, number, m, DAY)));
+    }
+
+    @Test
+    void listStaysBelowTheMessageLimit() {
+        String line = "ä".repeat(100);
+        String message = ClientLookup.joinList("Kopf", Collections.nCopies(500, line), 500, "… und {count} weitere", "Fuß");
+        assertTrue(message.getBytes(StandardCharsets.UTF_8).length <= 8192);
+        assertTrue(message.contains("weitere"));
+    }
+
+    @Test
+    void wildcardIsRecognized() {
+        assertTrue(ClientLookup.hasWildcard("%"));
+        assertTrue(ClientLookup.hasWildcard("Ha%s"));
+        assertFalse(ClientLookup.hasWildcard("Hans_Wurst"));
     }
 
     @Test

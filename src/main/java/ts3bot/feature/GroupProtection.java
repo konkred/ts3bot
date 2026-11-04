@@ -47,6 +47,7 @@ public final class GroupProtection {
     private final String added;
     private final String removed;
     private final String notFound;
+    private final String ambiguous;
     /** Gruppen-ID → erlaubte Unique-IDs, durch Komma getrennt. */
     private final Properties allowed = new Properties();
 
@@ -65,6 +66,7 @@ public final class GroupProtection {
         added = config.string("group-protect.message-added");
         removed = config.string("group-protect.message-removed");
         notFound = config.string("group-protect.message-not-found");
+        ambiguous = config.string("group-protect.message-ambiguous");
         if (Files.exists(file)) {
             try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
                 allowed.load(reader);
@@ -87,9 +89,7 @@ public final class GroupProtection {
             List<ServerGroupClient> members = api.getServerGroupClients(group);
             String key = String.valueOf(group);
             if (!allowed.containsKey(key)) {
-                Set<String> current = members.stream().map(ServerGroupClient::getUniqueIdentifier).collect(Collectors.toSet());
-                store(group, current);
-                LOG.info("Gruppen-Schutz: {} Mitglieder von Gruppe {} als erlaubt übernommen.", current.size(), group);
+                adopt(group, members);
                 continue;
             }
             Set<String> allowedIds = allowedIds(group);
@@ -100,6 +100,12 @@ public final class GroupProtection {
                 }
             }
         }
+    }
+
+    private void adopt(int group, List<ServerGroupClient> members) {
+        Set<String> current = members.stream().map(ServerGroupClient::getUniqueIdentifier).collect(Collectors.toSet());
+        store(group, current);
+        LOG.info("Gruppen-Schutz: {} Mitglieder von Gruppe {} als erlaubt übernommen.", current.size(), group);
     }
 
     /** Gibt {@code true} zurück, wenn die Nachricht ein Befehl dieses Features war. */
@@ -131,9 +137,17 @@ public final class GroupProtection {
             return notProtected.replace("{groups}", list).replace("{group}", args[1]);
         }
         String name = ClientLookup.cleanInput(args[2]);
-        String uid = resolveUid(name);
+        List<String> online = ClientLookup.online(api, name).stream().map(Client::getUniqueIdentifier).distinct().toList();
+        if (online.size() > 1) {
+            return ambiguous.replace("{count}", String.valueOf(online.size())).replace("{name}", name);
+        }
+        String uid = online.isEmpty() ? uidFromDatabase(name) : online.get(0);
         if (uid == null) {
             return notFound.replace("{name}", name);
+        }
+        // Sonst gäbe es ab hier eine Liste ohne die bisherigen Mitglieder, und die nächste Prüfung würde sie entfernen.
+        if (!allowed.containsKey(args[1])) {
+            adopt(group, api.getServerGroupClients(group));
         }
         Set<String> ids = allowedIds(group);
         if (add) {
@@ -149,10 +163,11 @@ public final class GroupProtection {
         return adminUsers.contains(uid) || ClientActions.inAnyGroup(api.getClientByUId(uid), adminGroups);
     }
 
-    /** Nur exakte Treffer: Ein Teilstück des Namens darf nie den falschen Nutzer freischalten. */
-    private String resolveUid(String nameOrUid) {
-        return ClientLookup.online(api, nameOrUid).map(Client::getUniqueIdentifier)
-                .or(() -> ClientLookup.byUid(api, nameOrUid).map(DatabaseClientInfo::getUniqueIdentifier))
+    /** Nur exakte Unique-IDs: Ein Teilstück des Namens darf nie den falschen Nutzer freischalten. */
+    private String uidFromDatabase(String uid) {
+        return ClientLookup.databaseClientByUid(api, uid).stream()
+                .map(DatabaseClientInfo::getUniqueIdentifier)
+                .findFirst()
                 .orElse(null);
     }
 

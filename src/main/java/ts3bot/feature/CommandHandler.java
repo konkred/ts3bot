@@ -7,9 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ts3bot.config.BotConfig;
 
-import java.util.Date;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -83,20 +82,29 @@ public final class CommandHandler {
     }
 
     private String otherTreue(String name) {
-        Optional<Client> online = ClientLookup.online(api, name);
-        if (online.isPresent()) {
-            Client client = online.get();
-            return otherTreue(client.getNickname(), client.getCreatedDate(), client.isInServerGroup(config.exemptGroup()));
+        if (ClientLookup.hasWildcard(name)) {
+            return config.string("lookup.message-wildcard");
         }
-        return ClientLookup.inDatabase(api, name)
-                .map(client -> otherTreue(client.getNickname(), client.getCreatedDate(), isExempt(client.getDatabaseId())))
-                .orElseGet(() -> config.string("command.treue.other-unknown").replace("{name}", name));
+        List<ClientLookup.Match> matches = ClientLookup.find(api, name);
+        if (matches.isEmpty()) {
+            return config.string("command.treue.other-unknown").replace("{name}", name);
+        }
+        if (matches.size() > 1) {
+            long now = System.currentTimeMillis();
+            return ClientLookup.listMessage(config, name, "!treue", matches, (number, match) -> treueLine(config, number, match, now));
+        }
+        ClientLookup.Match match = matches.get(0);
+        return isExempt(match.databaseId()) || !config.loyaltyEnabled()
+                ? config.string("command.treue.other-no-ranks").replace("{name}", match.nickname())
+                : treueOtherMessage(config, match.nickname(), System.currentTimeMillis() - match.created().getTime());
     }
 
-    private String otherTreue(String nickname, Date created, boolean exempt) {
-        return exempt || !config.loyaltyEnabled()
-                ? config.string("command.treue.other-no-ranks").replace("{name}", nickname)
-                : treueOtherMessage(config, nickname, System.currentTimeMillis() - created.getTime());
+    static String treueLine(BotConfig config, int number, ClientLookup.Match match, long now) {
+        return config.string("command.treue.line")
+                .replace("{nr}", String.valueOf(number))
+                .replace("{days}", formatDuration((now - match.created().getTime()) / DAY_MS))
+                .replace("{uid}", match.uid())
+                .replace("{name}", match.nickname());
     }
 
     private boolean isExempt(int databaseId) {
