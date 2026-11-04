@@ -10,6 +10,7 @@ import ts3bot.config.BotConfig;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** Chat-Befehle: {@code !ruhe}, {@code !botinfo}, {@code !treue} und {@code !help}. */
@@ -25,12 +26,15 @@ public final class CommandHandler {
 
     private final LastSeen lastSeen;
     private final GroupProtection protection;
+    /** Wer {@code !treue <Name>} nutzen darf. Leer bedeutet: alle. */
+    private final Set<Integer> treueOtherGroups;
 
     public CommandHandler(TS3Api api, BotConfig config, GroupProtection protection) {
         this.api = api;
         this.config = config;
         this.lastSeen = new LastSeen(api, config);
         this.protection = protection;
+        this.treueOtherGroups = config.intSet("command.treue.other-groups");
     }
 
     public void handle(TextMessageEvent e) {
@@ -58,7 +62,8 @@ public final class CommandHandler {
             api.sendPrivateMessage(invokerId, config.botinfoMessage());
         } else if (message.startsWith("!treue")) {
             String name = ClientLookup.cleanInput(e.getMessage().substring("!treue".length()));
-            api.sendPrivateMessage(invokerId, name.isEmpty() ? ownTreue(e.getInvokerUniqueId()) : otherTreue(name));
+            String uniqueId = e.getInvokerUniqueId();
+            api.sendPrivateMessage(invokerId, name.isEmpty() ? ownTreue(uniqueId) : otherTreueIfAllowed(uniqueId, name));
         } else if (message.startsWith("!help")) {
             api.sendPrivateMessage(invokerId, config.helpMessage());
         }
@@ -69,6 +74,12 @@ public final class CommandHandler {
         return client.isInServerGroup(config.exemptGroup()) || !config.loyaltyEnabled()
                 ? config.treueNoRanksMessage()
                 : treueMessage(config, System.currentTimeMillis() - client.getCreatedDate().getTime());
+    }
+
+    private String otherTreueIfAllowed(String invokerUid, String name) {
+        return treueOtherGroups.isEmpty() || ClientActions.inAnyGroup(api.getClientByUId(invokerUid), treueOtherGroups)
+                ? otherTreue(name)
+                : config.string("command.treue.other-denied");
     }
 
     private String otherTreue(String name) {

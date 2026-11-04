@@ -33,6 +33,7 @@ Java 17 ist das Kompilier-Ziel (`maven.compiler.release`), lokal ist JDK 21 inst
   ignoriert die eigenen Nachrichten des Bots.
 - `feature/CommandHandler.java`: Chat-Befehle `!ruhe` (Gruppe an/aus mit Cooldown), `!botinfo`, `!treue [Name]`, `!help`.
   Jeder Befehl antwortet immer, auch bei Fehlern (`command.error-message`). Stilles Ignorieren vermeiden.
+  `!treue <Name>` dürfen alle, außer `command.treue.other-groups` ist gesetzt.
 - `feature/ClientLookup.java`: findet Nutzer zu einer Chat-Eingabe, auch wenn der Client den Namen als Link schickt.
 - `feature/RankManager.java`: Gast → Member nach Wartezeit und Treue-Ränge, beim Join und für alle Online-Nutzer.
   `update` ist `synchronized`, weil Join-Events und die regelmäßige Prüfung in verschiedenen Threads laufen.

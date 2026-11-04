@@ -75,6 +75,7 @@ public final class Main {
         NameFilter names = new NameFilter(api, config);
         InactiveChannels inactiveChannels = new InactiveChannels(api, config);
         GroupProtection protection = new GroupProtection(api, config, PROTECTION_FILE);
+        Announcements announcements = new Announcements(api, config);
         listener.setApi(api, ranks, names, protection);
 
         query.connect();
@@ -91,7 +92,7 @@ public final class Main {
                 }
             });
         }
-        Announcements.start(api, config);
+        announcements.start();
         inactiveChannels.start();
         protection.start();
 

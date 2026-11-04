@@ -49,6 +49,7 @@ public final class GroupCheck {
                 groups.put("Treue-Rang " + rank.label(), rank.groupId());
             }
         }
+        config.intSet("command.treue.other-groups").forEach(id -> groups.put("command.treue.other-groups " + id, id));
         addGroups(groups, config, "auto-move", "groups");
         addGroups(groups, config, "channel-watch", "notify-groups");
         addGroups(groups, config, "group-notify", "groups", "notify-groups");

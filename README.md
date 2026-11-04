@@ -201,7 +201,7 @@ privat. Der Server-Chat wird bewusst ignoriert.
 | Befehl | Beschreibung | Verfügbar |
 |---|---|---|
 | `!help` | Listet die Befehle auf | immer |
-| `!treue [Name]` | Zeigt, wie lange man selbst oder ein anderer Nutzer dabei ist und wann der nächste Rang kommt | immer |
+| `!treue [Name]` | Zeigt, wie lange man selbst oder ein anderer Nutzer dabei ist und wann der nächste Rang kommt | immer, `!treue <Name>` lässt sich mit `command.treue.other-groups` auf Gruppen beschränken |
 | `!ruhe` | Schaltet die Ruhe-Gruppe an oder aus | immer |
 | `!botinfo` | Infotext zum Bot | immer |
 | `!seen <Name>` | Zeigt, wann jemand zuletzt online war | mit `seen.enabled=true` |

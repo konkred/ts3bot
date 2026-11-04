@@ -38,8 +38,23 @@ class FeaturesTest {
             new InactiveChannels(null, config);
             new LastSeen(null, config);
             new GroupProtection(null, config, dir.resolve("schutz.properties"));
+            new Announcements(null, config);
+            new CommandHandler(null, config, null);
         });
         assertFalse(new AutoMover(null, config).isActive());
+    }
+
+    @Test
+    void invalidAnnouncementTargetFailsAtStartup() throws IOException {
+        // Auch bei abgeschalteter Funktion, damit der Fehler nicht erst beim Einschalten auffällt.
+        BotConfig config = config("announcement.target=irgendwo\n");
+        assertThrows(IllegalArgumentException.class, () -> new Announcements(null, config));
+    }
+
+    @Test
+    void invalidTreueGroupsFailAtStartup() throws IOException {
+        BotConfig config = config("command.treue.other-groups=admin\n");
+        assertThrows(IllegalArgumentException.class, () -> new CommandHandler(null, config, null));
     }
 
     @Test

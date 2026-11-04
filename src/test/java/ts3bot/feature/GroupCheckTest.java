@@ -37,4 +37,12 @@ class GroupCheckTest {
         assertEquals(Set.of(410, 416), Set.copyOf(groups.values()));
         assertFalse(groups.containsKey("Member"));
     }
+
+    @Test
+    void treueGroupsAreChecked() throws IOException {
+        Path file = dir.resolve("config.properties");
+        Files.writeString(file, "command.treue.other-groups=77\n");
+
+        assertTrue(GroupCheck.configuredGroups(BotConfig.load(file)).containsValue(77));
+    }
 }
