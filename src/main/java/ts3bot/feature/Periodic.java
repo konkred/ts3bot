@@ -16,6 +16,11 @@ public final class Periodic {
 
     /** Startet die Aufgabe. Bei einem Abstand von 0 oder weniger bleibt sie aus. */
     public static void every(String name, long seconds, Runnable task) {
+        every(name, seconds, seconds, task);
+    }
+
+    /** Wie {@link #every(String, long, Runnable)}, der erste Lauf kommt aber schon nach {@code firstDelaySeconds}. */
+    public static void every(String name, long firstDelaySeconds, long seconds, Runnable task) {
         if (seconds <= 0) {
             return;
         }
@@ -31,6 +36,6 @@ public final class Periodic {
             } catch (Exception e) {
                 LOG.warn("{} fehlgeschlagen: {}", name, e.getMessage());
             }
-        }, seconds, seconds, TimeUnit.SECONDS);
+        }, firstDelaySeconds, seconds, TimeUnit.SECONDS);
     }
 }

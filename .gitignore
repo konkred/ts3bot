@@ -1,3 +1,4 @@
 target/
 config.properties
 group-protection.properties
+stats-channel.properties

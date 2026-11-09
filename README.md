@@ -206,10 +206,14 @@ privat. Der Server-Chat wird bewusst ignoriert. Auf unbekannte Befehle mit `!` a
 | `!ruhe` | Schaltet die Ruhe-Gruppe an oder aus | immer |
 | `!botinfo` | Infotext zum Bot | immer |
 | `!seen <Name>` | Zeigt, wann jemand zuletzt online war | mit `seen.enabled=true` |
+| `!rolle <Name>` | Schaltet eine freigegebene Rolle an oder aus | mit `self-role.enabled=true` |
+| `!admin <Text>` | Schickt eine Nachricht an die Admins, die online sind | mit `admin-call.enabled=true` |
+| `!top` | Zeigt die dienstältesten Nutzer | mit `top.enabled=true` |
+| `!online` | Zeigt, wie viele Nutzer gerade da sind | mit `online.enabled=true` |
 | `!schutz-add <Gruppe> <Name oder Unique-ID>` | Erlaubt einem Nutzer eine geschützte Gruppe | mit Gruppen-Schutz, siehe unten |
 | `!schutz-del <Gruppe> <Name oder Unique-ID>` | Entzieht die Erlaubnis | mit Gruppen-Schutz, siehe unten |
 
-Haben mehrere Nutzer denselben Namen, zeigen `!seen` und `!treue <Name>` eine Liste mit Unique-IDs, höchstens `lookup.max-results` Einträge. Mit `!seen <Unique-ID>` oder `!treue <Unique-ID>` fragt man dann genau einen Nutzer ab. `!schutz-add` und `!schutz-del` verlangen die Unique-ID, wenn mehrere Nutzer dieses Namens online sind.
+Haben mehrere Nutzer denselben Namen, zeigen `!seen` und `!treue <Name>` eine Liste mit Unique-IDs, höchstens `lookup.max-results` Einträge. Mit `!seen <Unique-ID>` oder `!treue <Unique-ID>` fragt man dann genau einen Nutzer ab.
 
 ### Optional, standardmäßig aus
 
@@ -228,6 +232,12 @@ Haben mehrere Nutzer denselben Namen, zeigen `!seen` und `!treue <Name>` eine Li
 | Gruppen-Benachrichtigung | Gruppen informieren, wenn ein Mitglied online kommt | `group-notify.*` |
 | Inaktive Channels | Lange leere Channels löschen, zuerst im Probemodus | `inactive-channel.*` |
 | Zuletzt gesehen | Befehl `!seen` | `seen.*` |
+| Join-to-Create | Eigener Channel beim Betreten eines Channels, wird gelöscht, sobald er leer ist. **Jeder leere Unterchannel von `join-create.parent` wird gelöscht**, nimm dafür einen eigenen Channel | `join-create.*` |
+| Rollen zum Selbstwählen | Befehl `!rolle` | `self-role.*` |
+| Admin rufen | Befehl `!admin` | `admin-call.*` |
+| Bestenliste | Befehl `!top` | `top.*` |
+| Online-Zahl | Befehl `!online` | `online.*` |
+| Statistik-Channel | Online-Zahl und Rekord im Channelnamen | `stats-channel.*` |
 | Gruppen-Schutz | Nur erlaubte Nutzer in einer Gruppe | `group-protect.*` |
 
 ## Konfiguration
@@ -314,6 +324,12 @@ src/main/java/ts3bot/
   feature/InactiveChannels.java   Löscht lange leere Channels
   feature/JoinNotifications.java  Channel-Überwachung, Gruppen-Benachrichtigung
   feature/LastSeen.java           Befehl !seen
+  feature/JoinToCreate.java       Temporäre Channels
+  feature/SelfRoles.java          Befehl !rolle
+  feature/AdminCall.java          Befehl !admin
+  feature/Leaderboard.java        Befehl !top
+  feature/OnlineCount.java        Befehl !online
+  feature/StatsChannel.java       Online-Zahl im Channelnamen
   feature/NameFilter.java         Unerlaubte Nicknames und Channelnamen
   feature/Periodic.java           Timer für regelmäßige Aufgaben
   feature/RankManager.java        Member-Gruppe und Treue-Ränge

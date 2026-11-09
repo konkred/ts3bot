@@ -33,7 +33,8 @@ public final class InactiveChannels {
         // Channels, die der Bot selbst als Ziel braucht, dürfen nie verschwinden.
         ignoreChannels = new HashSet<>(config.intSet("inactive-channel.ignore-channels"));
         ignoreChannels.add(config.botChannelId());
-        for (String key : List.of("away.channel", "mute.channel", "idle.channel", "recording.channel", "auto-move.channel")) {
+        for (String key : List.of("away.channel", "mute.channel", "idle.channel", "recording.channel", "auto-move.channel",
+                "join-create.channel", "join-create.parent", "stats-channel.channel")) {
             ignoreChannels.add(config.integer(key));
         }
         ignoreChannels.addAll(config.intSet("channel-watch.channels"));

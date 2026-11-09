@@ -27,13 +27,25 @@ final class ClientActions {
         return groups.stream().anyMatch(client::isInServerGroup);
     }
 
-    /** Benachrichtigt alle Online-Nutzer der Gruppen, außer dem Nutzer, um den es geht. */
-    static void notifyGroups(TS3Api api, Set<Integer> groups, String type, String message, int excludedClientId) {
+    /** Benachrichtigt alle Online-Nutzer der Gruppen, außer dem Nutzer, um den es geht. Gibt die Anzahl der Empfänger zurück. */
+    static int notifyGroups(TS3Api api, Set<Integer> groups, String type, String message, int excludedClientId) {
+        int reached = 0;
         for (Client client : api.getClients()) {
             if (!client.isServerQueryClient() && client.getId() != excludedClientId && inAnyGroup(client, groups)) {
                 send(api, client.getId(), type, message);
+                reached++;
             }
         }
+        return reached;
+    }
+
+    /** Text hinter dem Befehl, leer wenn nichts folgt. {@code null}, wenn die Nachricht nicht dieser Befehl ist. */
+    static String arguments(String message, String command) {
+        String[] parts = message.trim().split("\\s+", 2);
+        if (!parts[0].equalsIgnoreCase(command)) {
+            return null;
+        }
+        return parts.length > 1 ? parts[1].trim() : "";
     }
 
     /** {@code action} ist none, warn, kick oder ban. */

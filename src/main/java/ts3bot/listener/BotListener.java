@@ -17,6 +17,8 @@ import ts3bot.feature.BotChannel;
 import ts3bot.feature.CommandHandler;
 import ts3bot.feature.GroupProtection;
 import ts3bot.feature.JoinNotifications;
+import ts3bot.feature.JoinToCreate;
+import ts3bot.feature.Leaderboard;
 import ts3bot.feature.NameFilter;
 import ts3bot.feature.RankManager;
 import ts3bot.feature.WelcomeMessage;
@@ -36,14 +38,17 @@ public final class BotListener extends TS3EventAdapter {
     private AutoMoveOnJoin autoMove;
     private JoinNotifications notifications;
     private NameFilter names;
+    private JoinToCreate joinToCreate;
 
     public BotListener(BotConfig config) {
         this.config = config;
     }
 
-    public void setApi(TS3Api api, RankManager ranks, NameFilter names, GroupProtection protection) {
-        this.commands = new CommandHandler(api, config, protection);
+    public void setApi(TS3Api api, RankManager ranks, NameFilter names, GroupProtection protection,
+                       Leaderboard leaderboard, JoinToCreate joinToCreate) {
+        this.commands = new CommandHandler(api, config, protection, leaderboard);
         this.names = names;
+        this.joinToCreate = joinToCreate;
         this.autoMove = new AutoMoveOnJoin(api, config);
         this.notifications = new JoinNotifications(api, config);
         this.ranks = ranks;
@@ -89,6 +94,7 @@ public final class BotListener extends TS3EventAdapter {
         notifications.handleEnter(client.getId(), e.getClientTargetId());
         ranks.update(client);
         autoMove.handle(client, e.getClientTargetId());
+        joinToCreate.handleEnter(client.getId(), e.getClientTargetId());
     }
 
     @Override
@@ -98,6 +104,7 @@ public final class BotListener extends TS3EventAdapter {
         }
         botChannel.handleEnter(e.getClientId(), e.getTargetChannelId());
         notifications.handleEnter(e.getClientId(), e.getTargetChannelId());
+        joinToCreate.handleEnter(e.getClientId(), e.getTargetChannelId());
     }
 
     @Override

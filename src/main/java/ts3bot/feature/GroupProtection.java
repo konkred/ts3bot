@@ -47,7 +47,6 @@ public final class GroupProtection {
     private final String added;
     private final String removed;
     private final String notFound;
-    private final String ambiguous;
     /** Gruppen-ID → erlaubte Unique-IDs, durch Komma getrennt. */
     private final Properties allowed = new Properties();
 
@@ -66,7 +65,6 @@ public final class GroupProtection {
         added = config.string("group-protect.message-added");
         removed = config.string("group-protect.message-removed");
         notFound = config.string("group-protect.message-not-found");
-        ambiguous = config.string("group-protect.message-ambiguous");
         if (Files.exists(file)) {
             try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
                 allowed.load(reader);
@@ -137,11 +135,9 @@ public final class GroupProtection {
             return notProtected.replace("{groups}", list).replace("{group}", args[1]);
         }
         String name = ClientLookup.cleanInput(args[2]);
-        List<String> online = ClientLookup.online(api, name).stream().map(Client::getUniqueIdentifier).distinct().toList();
-        if (online.size() > 1) {
-            return ambiguous.replace("{count}", String.valueOf(online.size())).replace("{name}", name);
-        }
-        String uid = online.isEmpty() ? uidFromDatabase(name) : online.get(0);
+        // Online-Nicknames sind eindeutig, der Server hängt einem zweiten Hans eine 1 an.
+        String uid = ClientLookup.online(api, name).stream().map(Client::getUniqueIdentifier).findFirst()
+                .orElseGet(() -> uidFromDatabase(name));
         if (uid == null) {
             return notFound.replace("{name}", name);
         }

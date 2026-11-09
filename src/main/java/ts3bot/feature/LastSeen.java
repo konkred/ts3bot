@@ -21,6 +21,7 @@ public final class LastSeen {
     private final String unknown;
     private final String lineOnline;
     private final String lineOffline;
+    private final String dateFormat;
 
     public LastSeen(TS3Api api, BotConfig config) {
         this.api = api;
@@ -34,6 +35,9 @@ public final class LastSeen {
         unknown = config.string("seen.message-unknown");
         lineOnline = config.string("seen.line-online");
         lineOffline = config.string("seen.line-offline");
+        dateFormat = config.string("seen.date-format");
+        // Ein ungültiges Format soll schon beim Start auffallen.
+        new SimpleDateFormat(dateFormat);
     }
 
     /** Gibt {@code true} zurück, wenn die Nachricht dieser Befehl war. */
@@ -71,7 +75,7 @@ public final class LastSeen {
                 .replace("{name}", match.nickname());
     }
 
-    private static String formatDate(Date date) {
-        return new SimpleDateFormat("dd.MM.yyyy HH:mm").format(date);
+    private String formatDate(Date date) {
+        return new SimpleDateFormat(dateFormat).format(date);
     }
 }

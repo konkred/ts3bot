@@ -144,8 +144,13 @@ public final class BotConfig {
     }
 
     public String helpMessage() {
-        String help = string("command.help.message");
-        return bool("seen.enabled") ? help + "\n" + string("seen.help-line") : help;
+        StringBuilder help = new StringBuilder(string("command.help.message"));
+        for (String feature : List.of("seen", "self-role", "admin-call", "top", "online")) {
+            if (bool(feature + ".enabled")) {
+                help.append('\n').append(string(feature + ".help-line"));
+            }
+        }
+        return help.toString();
     }
 
     public String treueNextMessage() {

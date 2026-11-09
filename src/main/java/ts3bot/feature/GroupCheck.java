@@ -50,6 +50,11 @@ public final class GroupCheck {
             }
         }
         config.intSet("command.treue.other-groups").forEach(id -> groups.put("command.treue.other-groups " + id, id));
+        if (config.bool("self-role.enabled")) {
+            SelfRoles.parseRoles(config.string("self-role.roles")).values()
+                    .forEach(role -> groups.put("Rolle " + role.name(), role.group()));
+        }
+        addGroups(groups, config, "admin-call", "groups");
         addGroups(groups, config, "auto-move", "groups");
         addGroups(groups, config, "channel-watch", "notify-groups");
         addGroups(groups, config, "group-notify", "groups", "notify-groups");

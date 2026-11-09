@@ -28,11 +28,20 @@ public final class CommandHandler {
     /** Wer {@code !treue <Name>} nutzen darf. Leer bedeutet: alle. */
     private final Set<Integer> treueOtherGroups;
 
-    public CommandHandler(TS3Api api, BotConfig config, GroupProtection protection) {
+    private final SelfRoles selfRoles;
+    private final AdminCall adminCall;
+    private final OnlineCount onlineCount;
+    private final Leaderboard leaderboard;
+
+    public CommandHandler(TS3Api api, BotConfig config, GroupProtection protection, Leaderboard leaderboard) {
         this.api = api;
         this.config = config;
         this.lastSeen = new LastSeen(api, config);
         this.protection = protection;
+        this.selfRoles = new SelfRoles(api, config);
+        this.adminCall = new AdminCall(api, config);
+        this.onlineCount = new OnlineCount(api, config);
+        this.leaderboard = leaderboard;
         this.treueOtherGroups = config.intSet("command.treue.other-groups");
     }
 
@@ -52,7 +61,11 @@ public final class CommandHandler {
 
         // Diese Befehle brauchen die Originalschreibweise, weil Unique-IDs groß/klein unterscheiden.
         if (lastSeen.handle(invokerId, e.getMessage())
-                || protection.handle(invokerId, e.getInvokerUniqueId(), e.getMessage())) {
+                || protection.handle(invokerId, e.getInvokerUniqueId(), e.getMessage())
+                || selfRoles.handle(invokerId, e.getInvokerUniqueId(), e.getMessage())
+                || adminCall.handle(invokerId, e.getInvokerName(), e.getInvokerUniqueId(), e.getMessage())
+                || onlineCount.handle(invokerId, e.getMessage())
+                || leaderboard.handle(invokerId, e.getMessage())) {
             return;
         }
         if (message.startsWith("!ruhe")) {

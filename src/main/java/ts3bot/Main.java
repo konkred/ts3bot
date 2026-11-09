@@ -15,9 +15,12 @@ import ts3bot.feature.BotChannel;
 import ts3bot.feature.GroupCheck;
 import ts3bot.feature.GroupProtection;
 import ts3bot.feature.InactiveChannels;
+import ts3bot.feature.JoinToCreate;
+import ts3bot.feature.Leaderboard;
 import ts3bot.feature.NameFilter;
 import ts3bot.feature.Periodic;
 import ts3bot.feature.RankManager;
+import ts3bot.feature.StatsChannel;
 import ts3bot.listener.BotListener;
 
 import java.nio.file.Path;
@@ -28,6 +31,7 @@ public final class Main {
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     private static final Path CONFIG_FILE = Path.of("config.properties");
     private static final Path PROTECTION_FILE = Path.of("group-protection.properties");
+    private static final Path STATS_FILE = Path.of("stats-channel.properties");
 
     private Main() {
     }
@@ -76,7 +80,10 @@ public final class Main {
         InactiveChannels inactiveChannels = new InactiveChannels(api, config);
         GroupProtection protection = new GroupProtection(api, config, PROTECTION_FILE);
         Announcements announcements = new Announcements(api, config);
-        listener.setApi(api, ranks, names, protection);
+        Leaderboard leaderboard = new Leaderboard(api, config);
+        JoinToCreate joinToCreate = new JoinToCreate(api, config);
+        StatsChannel statsChannel = new StatsChannel(api, config, STATS_FILE);
+        listener.setApi(api, ranks, names, protection, leaderboard, joinToCreate);
 
         query.connect();
         api.addTS3Listeners(listener);
@@ -95,6 +102,9 @@ public final class Main {
         announcements.start();
         inactiveChannels.start();
         protection.start();
+        leaderboard.start();
+        joinToCreate.start();
+        statsChannel.start();
 
         if (!config.startupMessage().isBlank()) {
             api.sendServerMessage(config.startupMessage());
